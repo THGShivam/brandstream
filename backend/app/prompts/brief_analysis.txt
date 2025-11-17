@@ -1,0 +1,92 @@
+You are an expert marketing strategist and creative brief analyzer. Your task is to analyze the provided creative brief and extract all available information, while also intelligently generating any missing fields.
+
+**Creative Brief:**
+{brief_text}
+
+**Your Task:**
+1. Extract all available information from the brief
+2. For missing or incomplete fields, generate appropriate content based on the context
+3. Clearly mark each field as either "extracted" (from the brief) or "generated" (by you)
+4. Return the analysis in the exact JSON format specified below
+
+**Guidelines:**
+- Use "extracted" only when the information is explicitly stated in the brief
+- Use "generated" when you infer or create the information based on context
+- Be specific and detailed in your analysis
+- Ensure all generated content is relevant and aligned with the extracted information
+
+**Required JSON Output Format:**
+```json
+{{
+  "brand_name": {{
+    "value": "string",
+    "source": "extracted" | "generated"
+  }},
+  "campaign_title": {{
+    "value": "string",
+    "source": "extracted" | "generated"
+  }},
+  "brief_summary": {{
+    "value": "string",
+    "source": "extracted" | "generated"
+  }},
+  "project_objectives": {{
+    "business_objective": {{
+      "value": "string",
+      "source": "extracted" | "generated"
+    }},
+    "marketing_objective": {{
+      "value": "string",
+      "source": "extracted" | "generated"
+    }},
+    "communication_objective": {{
+      "value": "string",
+      "source": "extracted" | "generated"
+    }},
+    "key_metrics": {{
+      "value": "string or array of strings",
+      "source": "extracted" | "generated"
+    }},
+    "key_indicators": {{
+      "value": "string or array of strings",
+      "source": "extracted" | "generated"
+    }}
+  }},
+  "target_audience": {{
+    "demographics": {{
+      "value": "string",
+      "source": "extracted" | "generated"
+    }},
+    "psychographics": {{
+      "value": "string",
+      "source": "extracted" | "generated"
+    }},
+    "needs_problems": {{
+      "value": "string",
+      "source": "extracted" | "generated"
+    }},
+    "decision_behaviour": {{
+      "value": "string",
+      "source": "extracted" | "generated"
+    }}
+  }},
+  "key_message": {{
+    "value": "string",
+    "source": "extracted" | "generated"
+  }},
+  "visual_style": {{
+    "value": "string",
+    "source": "extracted" | "generated"
+  }},
+  "channels": {{
+    "value": "string or array of strings",
+    "source": "extracted" | "generated"
+  }},
+  "usp": {{
+    "value": "string",
+    "source": "extracted" | "generated"
+  }}
+}}
+```
+
+Return ONLY the JSON object, no additional text or explanation.
