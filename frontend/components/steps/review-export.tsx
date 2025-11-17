@@ -2,9 +2,9 @@
 
 import { Download, ArrowLeft, Image as ImageIcon, Video, FileText, Copy, ChevronDown, TrendingUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useAppSelector, useAppDispatch } from "@/lib/store/hooks"
-import { setImageEvaluation, setEvaluating } from "@/lib/store/slices/assetsSlice"
-import { evaluateAdCreative } from "@/lib/api"
+import { useAppSelector, useAppDispatch } from "@/services/store/hooks"
+import { setImageEvaluation, setEvaluating } from "@/services/store/slices/assetsSlice"
+import { evaluateAdCreative } from "@/services/api"
 import { ScoreBar } from "@/components/ui/score-bar"
 import JSZip from "jszip"
 import { saveAs } from "file-saver"

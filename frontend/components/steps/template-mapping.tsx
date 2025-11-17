@@ -2,11 +2,11 @@
 
 import { ArrowRight, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { BriefAnalysisResponse, generateCreativePrompts } from "@/lib/api"
+import { BriefAnalysisResponse, generateCreativePrompts } from "@/services/api"
 import { BriefAnalysisDisplay } from "@/components/brief-analysis/brief-analysis-display"
-import { useAppSelector, useAppDispatch } from "@/lib/store/hooks"
-import { updateBriefData } from "@/lib/store/slices/briefSlice"
-import { setCreativePrompts, setCreativeGenerating, setCreativeError } from "@/lib/store/slices/creativeSlice"
+import { useAppSelector, useAppDispatch } from "@/services/store/hooks"
+import { updateBriefData } from "@/services/store/slices/briefSlice"
+import { setCreativePrompts, setCreativeGenerating, setCreativeError } from "@/services/store/slices/creativeSlice"
 import { useState } from "react"
 
 interface TemplateMappingProps {

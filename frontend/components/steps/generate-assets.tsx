@@ -3,11 +3,11 @@
 import { Play, Upload, X, CheckCircle, Video, Image as ImageIcon, FileText, Eye, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState, useRef } from "react"
-import { useAppSelector, useAppDispatch } from "@/lib/store/hooks"
-import { updateImagePrompt, updateCopyPrompt, updateVideoPrompt } from "@/lib/store/slices/creativeSlice"
-import { setGeneratedImages, setGeneratedVideo, setGeneratedCopies, setAssetsGenerating, setAssetsError } from "@/lib/store/slices/assetsSlice"
+import { useAppSelector, useAppDispatch } from "@/services/store/hooks"
+import { updateImagePrompt, updateCopyPrompt, updateVideoPrompt } from "@/services/store/slices/creativeSlice"
+import { setGeneratedImages, setGeneratedVideo, setGeneratedCopies, setAssetsGenerating, setAssetsError } from "@/services/store/slices/assetsSlice"
 import { PromptEditorModal } from "@/components/prompt-editor-modal"
-import { generateAssets } from "@/lib/api"
+import { generateAssets } from "@/services/api"
 
 interface GenerateAssetsProps {
   onNext: () => void

@@ -12,7 +12,7 @@ import {
   TrendingUp
 } from "lucide-react"
 import { useState, useEffect } from "react"
-import { BriefAnalysisResponse } from "@/lib/api"
+import { BriefAnalysisResponse } from "@/services/api"
 import { SectionCard } from "./section-card"
 import { FieldDisplay } from "./field-display"
 

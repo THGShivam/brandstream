@@ -3,9 +3,9 @@
 import { Upload, File, FileText, Edit3, X, CheckCircle, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useState, useRef } from "react"
-import { analyzeBrief } from "@/lib/api"
-import { useAppDispatch } from "@/lib/store/hooks"
-import { setBriefData, setBriefLoading, setBriefError } from "@/lib/store/slices/briefSlice"
+import { analyzeBrief } from "@/services/api"
+import { useAppDispatch } from "@/services/store/hooks"
+import { setBriefData, setBriefLoading, setBriefError } from "@/services/store/slices/briefSlice"
 
 interface BriefUploadProps {
   onNext: () => void

@@ -1,7 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import "./globals.css"
-import { StoreProvider } from "@/lib/store/StoreProvider"
+import { StoreProvider } from "@/services/store/StoreProvider"
 
 export const metadata: Metadata = {
   title: "Brandstream - AI Creative Platform",
