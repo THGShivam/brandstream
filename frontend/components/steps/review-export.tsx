@@ -1,7 +1,7 @@
 "use client"
 
 import { Download, ArrowLeft, Image as ImageIcon, Video, FileText, Copy, ChevronDown, TrendingUp, Languages, Loader2, RotateCcw } from "lucide-react"
-import { Download, ArrowLeft, Image as ImageIcon, Video, FileText, Copy, ChevronDown, TrendingUp, Edit3 } from "lucide-react"
+import { Edit3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppSelector, useAppDispatch } from "@/services/store/hooks"
 import { setImageEvaluation, setEvaluating } from "@/services/store/slices/assetsSlice"
@@ -384,25 +384,14 @@ export function ReviewExport({ onPrev }: ReviewExportProps) {
                     <div className="flex items-center justify-between">
                       <div>
                         <h4 className="font-medium text-foreground text-sm">Variation {image.variation_number}</h4>
-                        <p className="text-xs text-muted-foreground mt-1">PNG Image</p>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => downloadSingleImage(image.image_base64, image.variation_number, image.mime_type)}
-                        className="bg-transparent border-border hover:border-purple-500 hover:text-purple-400"
-                      >
-                        <Download className="w-3 h-3" />
-                      </Button>
-                        <h4 className="font-medium text-white text-sm">Variation {image.variation_number}</h4>
-                        <p className="text-xs text-slate-500 mt-1">PNG Image{editedImages.has(image.variation_number) ? ' • Edited' : ''}</p>
+                        <p className="text-xs text-muted-foreground mt-1">PNG Image{editedImages.has(image.variation_number) ? ' • Edited' : ''}</p>
                       </div>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => openImageEditor(image.variation_number, getImageBase64(image.variation_number, image.image_base64), image.mime_type)}
-                          className="bg-transparent border-slate-700 hover:border-purple-500 hover:text-purple-400"
+                          className="bg-transparent border-border hover:border-purple-500 hover:text-purple-400"
                         >
                           <Edit3 className="w-3 h-3" />
                         </Button>
@@ -410,7 +399,7 @@ export function ReviewExport({ onPrev }: ReviewExportProps) {
                           variant="outline"
                           size="sm"
                           onClick={() => downloadSingleImage(getImageBase64(image.variation_number, image.image_base64), image.variation_number, image.mime_type)}
-                          className="bg-transparent border-slate-700 hover:border-purple-500 hover:text-purple-400"
+                          className="bg-transparent border-border hover:border-purple-500 hover:text-purple-400"
                         >
                           <Download className="w-3 h-3" />
                         </Button>
@@ -455,7 +444,7 @@ export function ReviewExport({ onPrev }: ReviewExportProps) {
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-medium text-muted-foreground">Overall Score</span>
                             <div className="flex items-center gap-2">
-                              <div className="w-10 h-10 rounded-lg bg-linear-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
                                 <span className="font-bold text-foreground text-sm">
                                   {((image.evaluation.conversion_score + image.evaluation.retention_score + image.evaluation.traffic_score + image.evaluation.engagement_score) / 4).toFixed(1)}
                                 </span>

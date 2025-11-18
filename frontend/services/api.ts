@@ -308,6 +308,25 @@ export async function translateCopy(
   targetLanguage: string
 ): Promise<TranslationResponse> {
   const response = await fetch(`${API_BASE_URL}/api/translate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      copy_text: copyText,
+      target_language: targetLanguage,
+    }),
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.detail || `Failed to translate copy: ${response.statusText}`)
+  }
+
+  return response.json()
+}
+
+/**
  * Applies AI-powered filter to an image
  * @param imageBase64 - Base64 encoded image
  * @param mimeType - MIME type of the image
@@ -357,9 +376,6 @@ export async function applyImageAdjustment(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      copy_text: copyText,
-      target_language: targetLanguage,
-    }),
       image_base64: imageBase64,
       mime_type: mimeType,
       adjustment_prompt: adjustmentPrompt
