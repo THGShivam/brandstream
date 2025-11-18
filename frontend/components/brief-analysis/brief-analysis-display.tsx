@@ -69,8 +69,8 @@ export function BriefAnalysisDisplay({ data, onDataChange }: BriefAnalysisDispla
     <div className="space-y-6">
       {/* Header Section */}
       <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl p-6">
-        <h2 className="text-2xl font-bold text-white mb-2">Brief Analysis Complete</h2>
-        <p className="text-slate-300">
+        <h2 className="text-2xl font-bold text-foreground mb-2">Brief Analysis Complete</h2>
+        <p className="text-foreground">
           Review the extracted and AI-generated insights from your creative brief.
           You can edit any field before proceeding.
         </p>
@@ -208,15 +208,15 @@ export function BriefAnalysisDisplay({ data, onDataChange }: BriefAnalysisDispla
       </div>
 
       {/* Legend */}
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
+      <div className="bg-card/50 border border-border rounded-xl p-4">
         <div className="flex items-center justify-center gap-6 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-blue-500/20 border border-blue-500/50 rounded"></div>
-            <span className="text-slate-400">Extracted from brief</span>
+            <span className="text-muted-foreground">Extracted from brief</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-purple-500/20 border border-purple-500/50 rounded"></div>
-            <span className="text-slate-400">AI-generated insights</span>
+            <span className="text-muted-foreground">AI-generated insights</span>
           </div>
         </div>
       </div>

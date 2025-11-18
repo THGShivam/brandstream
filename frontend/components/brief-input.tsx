@@ -26,7 +26,7 @@ export function BriefInput() {
             <p className="text-sm text-muted-foreground mb-4">
               Start here. Upload your main brief document (.pdf, .docx, .pptx). Max 50MB.
             </p>
-            <Button className="bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600">
+            <Button className="bg-gradient-to-r from-purple-500 to-pink-500 text-foreground hover:from-purple-600 hover:to-pink-600">
               📎 Upload Your Creative Brief
             </Button>
           </div>

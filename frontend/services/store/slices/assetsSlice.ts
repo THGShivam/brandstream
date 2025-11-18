@@ -5,6 +5,7 @@ interface AssetsState {
   generatedImages: GeneratedImage[]
   generatedVideo: GeneratedVideo | null
   generatedCopies: GeneratedCopy[]
+  productSkuImage: string | null
   isGenerating: boolean
   isEvaluating: boolean
   error: string | null
@@ -14,6 +15,7 @@ const initialState: AssetsState = {
   generatedImages: [],
   generatedVideo: null,
   generatedCopies: [],
+  productSkuImage: null,
   isGenerating: false,
   isEvaluating: false,
   error: null,
@@ -35,10 +37,14 @@ const assetsSlice = createSlice({
       state.generatedCopies = action.payload
       state.error = null
     },
+    setProductSkuImage: (state, action: PayloadAction<string>) => {
+      state.productSkuImage = action.payload
+    },
     clearGeneratedAssets: (state) => {
       state.generatedImages = []
       state.generatedVideo = null
       state.generatedCopies = []
+      state.productSkuImage = null
       state.error = null
     },
     setAssetsGenerating: (state, action: PayloadAction<boolean>) => {
@@ -64,6 +70,7 @@ export const {
   setGeneratedImages,
   setGeneratedVideo,
   setGeneratedCopies,
+  setProductSkuImage,
   clearGeneratedAssets,
   setAssetsGenerating,
   setAssetsError,

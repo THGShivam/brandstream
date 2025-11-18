@@ -111,22 +111,22 @@ export function BriefUpload({ onNext }: BriefUploadProps) {
       {/* Hero Section */}
       <div className="text-center space-y-4">
         <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto">
-          <Upload className="w-8 h-8 text-white" />
+          <Upload className="w-8 h-8 text-foreground" />
         </div>
-        <h2 className="text-4xl font-bold text-white">Upload Your Creative Brief</h2>
-        <p className="text-lg text-slate-400 max-w-2xl mx-auto">
+        <h2 className="text-4xl font-bold text-foreground">Upload Your Creative Brief</h2>
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
           Start by uploading your creative brief or paste it directly. Our AI will analyze it and prepare it for the next steps.
         </p>
       </div>
 
       {/* Upload Area */}
       <div
-        className={`bg-slate-900/50 border-2 border-dashed rounded-xl p-12 text-center transition-colors cursor-pointer group relative ${
+        className={`bg-card dark:bg-card/50 border-2 border-dashed rounded-xl p-12 text-center transition-colors cursor-pointer group relative ${
           isDragOver
             ? 'border-purple-500 bg-purple-500/10'
             : uploadedFile
               ? 'border-green-500/50 bg-green-500/5'
-              : 'border-slate-700 hover:border-purple-500/50'
+              : 'border-border hover:border-purple-500/50'
         }`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -147,8 +147,8 @@ export function BriefUpload({ onNext }: BriefUploadProps) {
               <CheckCircle className="w-6 h-6 text-green-400" />
             </div>
             <div className="space-y-2">
-              <p className="font-semibold text-white">{uploadedFile.name}</p>
-              <p className="text-sm text-slate-400">{formatFileSize(uploadedFile.size)}</p>
+              <p className="font-semibold text-foreground">{uploadedFile.name}</p>
+              <p className="text-sm text-muted-foreground">{formatFileSize(uploadedFile.size)}</p>
             </div>
             <Button
               variant="outline"
@@ -157,7 +157,7 @@ export function BriefUpload({ onNext }: BriefUploadProps) {
                 e.stopPropagation()
                 removeFile()
               }}
-              className="bg-transparent border-slate-600 hover:border-red-500 hover:text-red-400"
+              className="bg-transparent border-border hover:border-red-500 hover:text-red-400"
             >
               <X className="w-4 h-4 mr-2" />
               Remove File
@@ -168,19 +168,19 @@ export function BriefUpload({ onNext }: BriefUploadProps) {
             <div className={`w-14 h-14 rounded-lg flex items-center justify-center transition-colors ${
               isDragOver
                 ? 'bg-purple-500/20'
-                : 'bg-slate-800 group-hover:bg-purple-500/10'
+                : 'bg-muted group-hover:bg-purple-500/10'
             }`}>
               <Upload className={`w-6 h-6 transition-colors ${
                 isDragOver
                   ? 'text-purple-400'
-                  : 'text-slate-400 group-hover:text-purple-400'
+                  : 'text-muted-foreground group-hover:text-purple-400'
               }`} />
             </div>
             <div>
-              <p className="font-semibold text-white mb-1">
+              <p className="font-semibold text-foreground mb-1">
                 {isDragOver ? 'Drop your file here' : 'Click to upload or drag and drop'}
               </p>
-              <p className="text-sm text-slate-500">PDF, DOCX up to 25MB</p>
+              <p className="text-sm text-muted-foreground">PDF, DOCX up to 25MB</p>
             </div>
           </div>
         )}
@@ -188,29 +188,29 @@ export function BriefUpload({ onNext }: BriefUploadProps) {
 
       {/* Divider */}
       <div className="flex items-center gap-4">
-        <div className="flex-1 h-px bg-slate-700"></div>
-        <span className="text-sm text-slate-500 font-medium">OR</span>
-        <div className="flex-1 h-px bg-slate-700"></div>
+        <div className="flex-1 h-px bg-muted"></div>
+        <span className="text-sm text-muted-foreground font-medium">OR</span>
+        <div className="flex-1 h-px bg-muted"></div>
       </div>
 
       {/* Text Input Area */}
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 space-y-4">
+      <div className="bg-card dark:bg-card/50 border border-border rounded-xl p-6 space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center">
-            <Edit3 className="w-5 h-5 text-slate-400" />
+          <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center">
+            <Edit3 className="w-5 h-5 text-muted-foreground" />
           </div>
           <div>
-            <h3 className="font-semibold text-white">Paste Your Creative Brief</h3>
-            <p className="text-sm text-slate-400">Copy and paste your brief text directly</p>
+            <h3 className="font-semibold text-foreground">Paste Your Creative Brief</h3>
+            <p className="text-sm text-muted-foreground">Copy and paste your brief text directly</p>
           </div>
         </div>
         <textarea
           value={briefText}
           onChange={(e) => setBriefText(e.target.value)}
           placeholder="Paste your creative brief here... Include details about your brand, target audience, campaign objectives, key messages, and any specific requirements."
-          className="w-full h-40 bg-slate-800/50 border border-slate-700 rounded-lg p-4 text-white placeholder-slate-500 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-colors"
+          className="w-full h-40 bg-muted/50 border border-border rounded-lg p-4 text-foreground placeholder-slate-500 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-colors"
         />
-        <div className="flex justify-between items-center text-xs text-slate-500">
+        <div className="flex justify-between items-center text-xs text-muted-foreground">
           <span>{briefText.length} characters</span>
           <span>Minimum 100 characters recommended</span>
         </div>
@@ -225,26 +225,26 @@ export function BriefUpload({ onNext }: BriefUploadProps) {
         ].map((format) => (
           <div
             key={format.name}
-            className="bg-slate-900/50 border border-slate-800 rounded-lg p-4 text-center hover:border-slate-700 transition-colors"
+            className="bg-card dark:bg-card/50 border border-border rounded-lg p-4 text-center hover:border-border transition-colors"
           >
-            <format.icon className="w-6 h-6 text-slate-400 mx-auto mb-2" />
-            <p className="font-medium text-white text-sm">{format.name}</p>
-            <p className="text-xs text-slate-500">{format.desc}</p>
+            <format.icon className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
+            <p className="font-medium text-foreground text-sm">{format.name}</p>
+            <p className="text-xs text-muted-foreground">{format.desc}</p>
           </div>
         ))}
       </div> */}
 
        {/* Divider */}
       <div className="flex items-center gap-4">
-        <div className="flex-1 h-px bg-slate-700"></div>
-        <span className="text-sm text-slate-500 font-medium">OR</span>
-        <div className="flex-1 h-px bg-slate-700"></div>
+        <div className="flex-1 h-px bg-muted"></div>
+        <span className="text-sm text-muted-foreground font-medium">OR</span>
+        <div className="flex-1 h-px bg-muted"></div>
       </div>
 
       {/* Quick Start Option */}
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 space-y-4">
-        <h3 className="font-semibold text-white">Or use sample brief</h3>
-        <p className="text-sm text-slate-400">Try with a pre-made brief to explore the platform</p>
+      <div className="bg-card dark:bg-card/50 border border-border rounded-xl p-6 space-y-4">
+        <h3 className="font-semibold text-foreground">Or use sample brief</h3>
+        <p className="text-sm text-muted-foreground">Try with a pre-made brief to explore the platform</p>
         <Button
           variant="outline"
           className="w-full bg-transparent"

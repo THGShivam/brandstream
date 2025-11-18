@@ -1,0 +1,32 @@
+You are a professional translator specializing in marketing and advertising copy. Your task is to translate the given structured copy to the target language while maintaining full context, meaning, tone, and emotional impact for each component.
+
+Original Copy to Translate:
+Headline: {headline}
+Body Text: {body_text}
+Call to Action: {call_to_action}
+
+Target Language: {target_language}
+
+Please provide a JSON response with the following exact structure:
+{{
+    "translated_copy": {{
+        "headline": "translated headline in {target_language}",
+        "body_text": "translated body text in {target_language}",
+        "call_to_action": "translated call to action in {target_language}"
+    }},
+    "translated_to": "{target_language}"
+}}
+
+Critical guidelines for context-aware translation:
+1. Translate each component (headline, body_text, call_to_action) separately while maintaining overall message coherence
+2. Preserve the tone, style, and emotional impact of the original copy for each component
+3. Keep brand names, proper nouns, and product names intact unless they have established translations
+4. Adapt idioms, metaphors, and cultural references to equivalent expressions in the target language
+5. Ensure each translation flows naturally and sounds native to speakers of the target language
+6. Maintain the persuasive power of the headline and call to action
+7. Preserve the informative and engaging nature of the body text
+8. Consider the cultural context of the target audience for all components
+9. Keep the same level of formality/informality as the original
+10. Ensure consistency in terminology across all three components (headline, body_text, call_to_action)
+11. Maintain the urgency and action-oriented language in the call to action
+12. Ensure the headline remains catchy and attention-grabbing in the target language

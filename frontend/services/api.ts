@@ -159,7 +159,8 @@ export interface GeneratedImage {
 }
 
 export interface GeneratedVideo {
-  video_base64: string
+  video_base64?: string
+  video_url?: string
   mime_type: string
   duration_seconds?: number
 }
@@ -231,7 +232,7 @@ export async function generateAssets(params: AssetGenerationParams): Promise<Ass
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}))
-    throw new Error(errorData.detail || `Failed to generate assets: ${response.statusStatus}`)
+    throw new Error(errorData.detail || `Failed to generate assets: ${response.statusText}`)
   }
 
   return response.json()
@@ -270,6 +271,56 @@ export async function evaluateAdCreative(
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}))
     throw new Error(errorData.detail || `Failed to evaluate ad creative: ${response.statusText}`)
+  }
+
+  return response.json()
+}
+
+/**
+ * Translation types
+ */
+export interface TranslationRequest {
+  copy_text: {
+    headline: string
+    body_text: string
+    call_to_action: string
+  }
+  target_language: string
+}
+
+export interface TranslationResponse {
+  translated_copy: {
+    headline: string
+    body_text: string
+    call_to_action: string
+  }
+  translated_to: string
+}
+
+/**
+ * Translates copy text to a target language while maintaining context
+ * @param copyText - The structured copy text to translate
+ * @param targetLanguage - The target language for translation
+ * @returns Promise with the translated copy
+ */
+export async function translateCopy(
+  copyText: { headline: string; body_text: string; call_to_action: string },
+  targetLanguage: string
+): Promise<TranslationResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/translate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      copy_text: copyText,
+      target_language: targetLanguage,
+    }),
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.detail || `Failed to translate copy: ${response.statusText}`)
   }
 
   return response.json()

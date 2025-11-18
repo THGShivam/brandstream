@@ -110,7 +110,7 @@ export function AssetGeneration() {
           {/* Generate Button */}
           <Button
             onClick={() => setIsGenerating(true)}
-            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 py-6 text-lg font-semibold"
+            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-foreground hover:from-purple-600 hover:to-pink-600 py-6 text-lg font-semibold"
           >
             {isGenerating ? "✨ Generating Creative Asset..." : "✨ Generate Creative Asset"}
           </Button>

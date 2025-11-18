@@ -11,10 +11,10 @@ export function Sidebar({ currentView, setCurrentView }: SidebarProps) {
       {/* Logo */}
       <div className="mb-8 flex items-center gap-2">
         <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-          <span className="text-white font-bold text-sm">B</span>
+          <span className="text-foreground font-bold text-sm">B</span>
         </div>
         <div>
-          <p className="text-sm font-bold text-white">Brandstream</p>
+          <p className="text-sm font-bold text-foreground">Brandstream</p>
           <p className="text-xs text-purple-300">Intelligent Creative</p>
         </div>
       </div>
@@ -37,7 +37,7 @@ export function Sidebar({ currentView, setCurrentView }: SidebarProps) {
             className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${
               currentView === item.id
                 ? "bg-purple-500/30 text-purple-200 border border-purple-400/50"
-                : "text-slate-300 hover:text-white hover:bg-slate-800"
+                : "text-foreground hover:text-foreground hover:bg-muted"
             }`}
           >
             <span className="mr-2">{item.icon}</span>
@@ -51,8 +51,8 @@ export function Sidebar({ currentView, setCurrentView }: SidebarProps) {
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full"></div>
           <div className="text-xs flex-1">
-            <p className="font-semibold text-white">Sarah M.</p>
-            <p className="text-slate-400">Creative Director</p>
+            <p className="font-semibold text-foreground">Sarah M.</p>
+            <p className="text-muted-foreground">Creative Director</p>
           </div>
         </div>
       </div>

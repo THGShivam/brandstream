@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 # Import modular components
 from app.config import Config
-from app.routers import brief_router, ad_creative_router
+from app.routers import brief_router, ad_creative_router, translation_router
 
 # Load environment variables
 load_dotenv()
@@ -32,6 +32,7 @@ app.add_middleware(
 # Include routers
 app.include_router(brief_router.router)
 app.include_router(ad_creative_router.router)
+app.include_router(translation_router.router)
 
 
 @app.get("/")

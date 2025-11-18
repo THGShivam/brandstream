@@ -60,13 +60,13 @@ export function FieldDisplay({ label, field, description, onChange }: FieldDispl
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium text-white">{label}</label>
+        <label className="text-sm font-medium text-foreground">{label}</label>
         <div className="flex items-center gap-2">
           <SourceBadge source={field.source} />
           {!isEditing ? (
             <button
               onClick={() => setIsEditing(true)}
-              className="p-1.5 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+              className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
               title="Edit field"
             >
               <Edit2 className="w-3.5 h-3.5" />
@@ -92,7 +92,7 @@ export function FieldDisplay({ label, field, description, onChange }: FieldDispl
         </div>
       </div>
       {description && (
-        <p className="text-xs text-slate-500">{description}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
       )}
 
       {/* Display Mode */}
@@ -105,8 +105,8 @@ export function FieldDisplay({ label, field, description, onChange }: FieldDispl
                   key={index}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
                     isGenerated
-                      ? 'bg-purple-500/10 text-purple-300 border border-purple-500/30'
-                      : 'bg-slate-800 text-slate-300 border border-slate-700'
+                      ? 'bg-purple-500/10 text-purple-600 dark:text-purple-300 border border-purple-500/30'
+                      : 'bg-muted text-foreground border border-border'
                   }`}
                 >
                   {item}
@@ -117,8 +117,8 @@ export function FieldDisplay({ label, field, description, onChange }: FieldDispl
             <div
               className={`p-3 rounded-lg text-sm ${
                 isGenerated
-                  ? 'bg-purple-500/10 text-purple-100 border border-purple-500/30'
-                  : 'bg-slate-800 text-slate-300 border border-slate-700'
+                  ? 'bg-purple-500/10 text-purple-700 dark:text-purple-100 border border-purple-500/30'
+                  : 'bg-muted text-foreground border border-border'
               }`}
             >
               {field.value as string}
@@ -142,8 +142,8 @@ export function FieldDisplay({ label, field, description, onChange }: FieldDispl
                       onChange={(e) => handleArrayItemEdit(index, e.target.value)}
                       className={`flex-1 px-3 py-2 rounded-lg text-sm border focus:outline-none focus:ring-2 ${
                         isGenerated
-                          ? 'bg-purple-500/10 text-purple-100 border-purple-500/30 focus:ring-purple-500/50'
-                          : 'bg-slate-800 text-slate-300 border-slate-700 focus:ring-slate-500'
+                          ? 'bg-purple-500/10 text-purple-700 dark:text-purple-100 border-purple-500/30 focus:ring-purple-500/50'
+                          : 'bg-muted text-foreground border-border focus:ring-ring'
                       }`}
                     />
                     <button
@@ -172,8 +172,8 @@ export function FieldDisplay({ label, field, description, onChange }: FieldDispl
                   placeholder="Add new item..."
                   className={`flex-1 px-3 py-2 rounded-lg text-sm border focus:outline-none focus:ring-2 ${
                     isGenerated
-                      ? 'bg-purple-500/10 text-purple-100 border-purple-500/30 placeholder-purple-400/50 focus:ring-purple-500/50'
-                      : 'bg-slate-800 text-slate-300 border-slate-700 placeholder-slate-500 focus:ring-slate-500'
+                      ? 'bg-purple-500/10 text-purple-700 dark:text-purple-100 border-purple-500/30 placeholder:text-purple-500 dark:placeholder:text-purple-400/50 focus:ring-purple-500/50'
+                      : 'bg-muted text-foreground border-border placeholder:text-muted-foreground focus:ring-ring'
                   }`}
                 />
                 <button
@@ -193,8 +193,8 @@ export function FieldDisplay({ label, field, description, onChange }: FieldDispl
               rows={3}
               className={`w-full px-3 py-2 rounded-lg text-sm border focus:outline-none focus:ring-2 resize-none ${
                 isGenerated
-                  ? 'bg-purple-500/10 text-purple-100 border-purple-500/30 focus:ring-purple-500/50'
-                  : 'bg-slate-800 text-slate-300 border-slate-700 focus:ring-slate-500'
+                  ? 'bg-purple-500/10 text-purple-700 dark:text-purple-100 border-purple-500/30 focus:ring-purple-500/50'
+                  : 'bg-muted text-foreground border-border focus:ring-ring'
               }`}
             />
           )}
@@ -215,8 +215,8 @@ export function SourceBadge({ source }: SourceBadgeProps) {
     <span
       className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${
         isGenerated
-          ? 'bg-purple-500/20 text-purple-300'
-          : 'bg-blue-500/20 text-blue-300'
+          ? 'bg-purple-500/20 text-purple-600 dark:text-purple-300'
+          : 'bg-blue-500/20 text-blue-600 dark:text-blue-300'
       }`}
     >
       {isGenerated ? (
