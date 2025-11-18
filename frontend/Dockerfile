@@ -12,14 +12,18 @@ RUN npm ci
 FROM node:22-alpine AS builder
 WORKDIR /app
 
+# Accept build argument for API URL
+ARG NEXT_PUBLIC_API_URL=http://localhost:8000
+
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 
 # Copy application files
 COPY . .
 
-# Set environment variable for build
+# Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 # Build the application
 RUN npm run build
