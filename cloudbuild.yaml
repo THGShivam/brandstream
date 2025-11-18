@@ -50,6 +50,8 @@ steps:
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
+      - '--service-account'
+      - 'brandstream@thg-ml-dev.iam.gserviceaccount.com'
       - '--set-env-vars'
       - 'PROJECT_ID=$PROJECT_ID,LOCATION=${_REGION}'
       - '--set-secrets'
@@ -78,6 +80,8 @@ steps:
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
+      - '--service-account'
+      - 'brandstream@thg-ml-dev.iam.gserviceaccount.com'
       - '--set-env-vars'
       - 'NEXT_PUBLIC_API_URL=${_BACKEND_URL}'
       - '--memory'
@@ -105,3 +109,4 @@ substitutions:
 options:
   logging: CLOUD_LOGGING_ONLY
   machineType: 'E2_HIGHCPU_8'
+
