@@ -143,10 +143,6 @@ async def generate_creative_prompts(
         HTTPException: If generation fails
     """
     try:
-        # Debug: Print the incoming request
-        print(f"Received request type: {type(request)}")
-        print(f"Request brief_data type: {type(request.brief_data)}")
-
         # Generate creative prompts using the service
         generation_result = await ad_creative_service.generate_creative_prompts(request)
 
@@ -157,17 +153,11 @@ async def generate_creative_prompts(
         return JSONResponse(content=validated.model_dump(mode='json'))
 
     except ValueError as e:
-        import traceback
-        print(f"ValueError: {str(e)}")
-        print(traceback.format_exc())
         raise HTTPException(
             status_code=422,
             detail=str(e)
         )
     except Exception as e:
-        import traceback
-        print(f"Exception: {str(e)}")
-        print(traceback.format_exc())
         raise HTTPException(
             status_code=500,
             detail=f"Error generating creative prompts: {str(e)}"
@@ -281,10 +271,10 @@ async def generate_assets(
         # Copy generation config
         if copy_prompt and copy_variations and creativity_level:
             copy_model_mapping = {
-                "Gemini 2.0 Flash": "gemini-2.0-flash-001",
+                "Gemini 2.5 pro": "gemini-2.5-pro",
                 "Gemini 1.5 Pro": "gemini-1.5-pro-002"
             }
-            cp_model_name = copy_model_mapping.get(copy_model, "gemini-2.0-flash-001")
+            cp_model_name = copy_model_mapping.get(copy_model, "gemini-2.5-pro")
 
             cp_config = CopyGenerationConfig(
                 prompt=copy_prompt,
@@ -294,7 +284,6 @@ async def generate_assets(
             )
 
         # Generate all assets in parallel
-        print(f"🚀 Starting parallel generation...")
         generated_assets = await asset_generation_service.generate_assets(
             image_config=img_config,
             video_config=vid_config,
@@ -310,17 +299,11 @@ async def generate_assets(
         return JSONResponse(content=validated.model_dump(mode='json'))
 
     except ValueError as e:
-        import traceback
-        print(f"ValueError: {str(e)}")
-        print(traceback.format_exc())
         raise HTTPException(
             status_code=422,
             detail=str(e)
         )
     except Exception as e:
-        import traceback
-        print(f"Exception: {str(e)}")
-        print(traceback.format_exc())
         raise HTTPException(
             status_code=500,
             detail=f"Error generating assets: {str(e)}"

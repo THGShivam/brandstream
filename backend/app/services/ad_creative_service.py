@@ -153,11 +153,6 @@ Return ONLY a JSON object with these exact fields (scores must be decimal number
             brief = request.brief_data
 
             # Debug: Print the brief data
-            print(f"Brief type: {type(brief)}")
-            print(f"Brief brand_name: {brief.brand_name}")
-            print(f"Brief brand_name type: {type(brief.brand_name)}")
-            print(f"Brief brand_name.value: {brief.brand_name.value}")
-            print(f"Brief brand_name.value type: {type(brief.brand_name.value)}")
 
             # Extract channels as comma-separated string
             channels_value = brief.channels.value
@@ -188,11 +183,11 @@ Return ONLY a JSON object with these exact fields (scores must be decimal number
         except AttributeError as e:
             raise ValueError(f"Invalid brief data structure: {str(e)}")
 
-        print(prompt)
+       
 
         try:
             model = self._get_model()
-            print(model)
+    
 
             # Let Gemini generate free-form JSON based on prompt instructions
             # The prompt already specifies the exact JSON format needed

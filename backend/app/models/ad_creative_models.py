@@ -166,7 +166,7 @@ class CopyGenerationConfig(BaseModel):
     prompt: str = Field(..., description="Copy generation prompt")
     num_variations: int = Field(..., ge=1, le=5, description="Number of copy variations to generate")
     creativity_level: str = Field(..., description="Creativity level: conservative, balanced, creative, experimental")
-    model_name: str = Field(default="gemini-2.0-flash-001", description="Gemini model version")
+    model_name: str = Field(default="gemini-2.5-pro", description="Gemini model version")
 
 
 class AssetGenerationResponse(BaseModel):

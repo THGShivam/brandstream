@@ -47,14 +47,12 @@ class AssetGenerationService:
     def _get_imagen_model(self, model_name: str):
         """Get or create Imagen model instance"""
         if model_name not in self.imagen_models:
-            print(f"Loading Imagen model: {model_name}")
             self.imagen_models[model_name] = model_name
         return self.imagen_models[model_name]
 
     def _get_gemini_model(self, model_name: str) -> GenerativeModel:
         """Get or create Gemini model instance"""
         if model_name not in self.gemini_models:
-            print(f"Loading Gemini model: {model_name}")
             self.gemini_models[model_name] = GenerativeModel(model_name)
         return self.gemini_models[model_name]
 
@@ -69,12 +67,10 @@ class AssetGenerationService:
     ) -> List[GeneratedImage]:
         """Generate images using Gemini 2.5 Flash with image preview capability"""
         try:
-            print(f"Using Gemini model: gemini-2.5-flash-image-preview")
-            print(f"Generating {config.num_variations} image variations with reference image...")
 
             # Configure Gemini API
             genai_sdk.configure(api_key=Config.GEMINI_API_KEY)
-            model = genai_sdk.GenerativeModel('gemini-2.5-flash-image-preview')
+            model = genai_sdk.GenerativeModel('gemini-2.5-flash-image')
 
             # Convert product SKU image bytes to PIL Image
             product_image = PILImage.open(io.BytesIO(product_sku_image))
@@ -83,7 +79,6 @@ class AssetGenerationService:
 
             # Generate images one at a time with the reference image
             for i in range(config.num_variations):
-                print(f"Generating variation {i + 1}/{config.num_variations}...")
 
                 # Create prompt that includes reference to the product image
                 generation_prompt = f"""Generate a creative advertising image based on this product image and the following prompt:
@@ -117,13 +112,11 @@ Make sure to incorporate the product from the reference image into the creative 
                                         mime_type=part.inline_data.mime_type or "image/png"
                                     )
                                 )
-                                print(f"✓ Successfully generated image variation {i + 1}")
                                 break
 
             if not generated_images:
                 raise ValueError("No images were generated")
 
-            print(f"✓ Generated {len(generated_images)} images successfully with reference image")
             return generated_images
 
         except Exception as e:
@@ -135,7 +128,6 @@ Make sure to incorporate the product from the reference image into the creative 
         product_sku_image: bytes
     ) -> GeneratedVideo:
         """Generate video using Veo 3 with Google GenAI SDK"""
-        print(f"Using Veo model: veo-3.1-generate-preview")
 
         try:
             # Initialize Google GenAI client
@@ -145,7 +137,6 @@ Make sure to incorporate the product from the reference image into the creative 
                 location="us-central1"
             )
 
-            print(f"Generating {config.duration_seconds}s video with prompt: {config.prompt[:100]}...")
 
             # Start video generation operation - pass image bytes with MIME type
             # Note: Not using output_gcs_uri so the API returns video_bytes directly
@@ -161,9 +152,6 @@ Make sure to incorporate the product from the reference image into the creative 
                 ),
             )
 
-            print("Video generation started, waiting for completion...")
-            print(f"Operation type: {type(operation)}")
-            print(f"Operation value: {operation}")
 
             max_wait_time = 600  # 10 minutes timeout
             start_time = time.time()
@@ -172,12 +160,9 @@ Make sure to incorporate the product from the reference image into the creative 
             try:
                 if isinstance(operation, str):
                     operation_name = operation
-                    print(f"Operation is a string: {operation_name}")
                 else:
                     operation_name = str(operation.name) if hasattr(operation, 'name') else str(operation)
-                    print(f"Extracted operation name: {operation_name}")
             except Exception as e:
-                print(f"Error extracting operation name: {e}")
                 raise ValueError(f"Failed to get operation name: {str(e)}")
 
             # Poll for completion using the operation object
@@ -192,9 +177,8 @@ Make sure to incorporate the product from the reference image into the creative 
                     # Safely check status
                     try:
                         status = current_operation.metadata if hasattr(current_operation, 'metadata') else 'polling...'
-                        print(f"Video generation status: {status}")
                     except:
-                        print("Polling...")
+                        pass
 
                     # Check if done
                     try:
@@ -210,26 +194,18 @@ Make sure to incorporate the product from the reference image into the creative 
 
                     await asyncio.sleep(15)  # Wait 15 seconds between polls
                 except Exception as e:
-                    print(f"Error during polling: {e}")
                     raise
 
             # Check if we have a response
             try:
-                print(f"Operation object: {operation}")
-                print(f"Has response: {hasattr(operation, 'response')}")
-                print(f"Response value: {operation.response if hasattr(operation, 'response') else 'N/A'}")
-                print(f"Has result: {hasattr(operation, 'result')}")
 
                 # Try to get the result
                 if hasattr(operation, 'result') and operation.result:
                     result = operation.result
-                    print(f"Result object: {result}")
-                    print(f"Result type: {type(result)}")
 
                     # Check for generated_videos
                     if hasattr(result, 'generated_videos') and result.generated_videos:
                         video_result = result.generated_videos[0]
-                        print(f"Video result: {video_result}")
 
                         # Check if we have video object
                         if hasattr(video_result, 'video') and video_result.video:
@@ -242,7 +218,6 @@ Make sure to incorporate the product from the reference image into the creative 
                             elif hasattr(video_obj, 'url') and video_obj.url:
                                 video_uri = video_obj.url
 
-                            print(f"Video URI: {video_uri}")
 
                             # If we have a URI, process it
                             if video_uri:
@@ -268,7 +243,6 @@ Make sure to incorporate the product from the reference image into the creative 
                                         method="GET"
                                     )
 
-                                    print(f"✓ Successfully generated video with signed URL")
                                     return GeneratedVideo(
                                         video_url=video_url,
                                         mime_type="video/mp4",
@@ -276,7 +250,6 @@ Make sure to incorporate the product from the reference image into the creative 
                                     )
                                 elif video_uri.startswith('http'):
                                     # It's already a URL, return it directly
-                                    print(f"✓ Successfully generated video with URL")
                                     return GeneratedVideo(
                                         video_url=video_uri,
                                         mime_type="video/mp4",
@@ -285,11 +258,9 @@ Make sure to incorporate the product from the reference image into the creative 
 
                             # If no URI, check for video_bytes
                             if hasattr(video_obj, 'video_bytes') and video_obj.video_bytes:
-                                print(f"Video bytes found, converting to base64...")
                                 video_bytes = video_obj.video_bytes
                                 video_base64 = self._bytes_to_base64(video_bytes)
 
-                                print(f"✓ Successfully generated video with base64 (size: {len(video_bytes)} bytes)")
                                 return GeneratedVideo(
                                     video_base64=video_base64,
                                     mime_type="video/mp4",
@@ -300,14 +271,11 @@ Make sure to incorporate the product from the reference image into the creative 
                 raise ValueError(f"Video generation completed but no video found. Operation: {operation}")
 
             except Exception as e:
-                print(f"Error processing video result: {e}")
                 import traceback
-                print(f"Processing error traceback: {traceback.format_exc()}")
                 raise ValueError(f"Failed to process video result: {str(e)}")
 
         except Exception as e:
             import traceback
-            print(f"Full error traceback: {traceback.format_exc()}")
             raise ValueError(f"Error generating video: {str(e)}")
 
     async def generate_copy(
@@ -320,8 +288,8 @@ Make sure to incorporate the product from the reference image into the creative 
             model = self._get_gemini_model(config.model_name)
             temperature = self._map_creativity_to_temperature(config.creativity_level)
 
-            print(f"Using Gemini model: {config.model_name}")
-            print(f"Generating {config.num_variations} copy variations...")
+
+          
 
             # Enhanced prompt for copy generation
             generation_prompt = f"""{config.prompt}
@@ -366,7 +334,6 @@ Brief Context:
                         variation_number=i + 1
                     )
                 )
-                print(f"✓ Generated copy variation {i + 1}")
 
             return generated_copies
 
@@ -413,16 +380,14 @@ Brief Context:
 
         # Run all generation tasks in parallel
         if tasks:
-            print(f"🚀 Running {len(tasks)} generation tasks in parallel...")
             results = await asyncio.gather(*tasks, return_exceptions=True)
 
             # Process results
             for task_type, task_result in zip(task_types, results):
                 if isinstance(task_result, Exception):
-                    print(f"⚠ Error in {task_type} generation: {str(task_result)}")
                     # Continue with other tasks even if one fails
+                    pass
                 else:
                     result[task_type] = task_result
-                    print(f"✓ {task_type} generation completed successfully")
 
         return result

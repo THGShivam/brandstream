@@ -50,7 +50,6 @@ class Config:
             return True
 
         except json.JSONDecodeError:
-            print("Error: SERVICE_ACCOUNT_JSON is not valid JSON")
             return False
         except Exception as e:
             print(f"Error initializing Vertex AI: {str(e)}")

@@ -20,7 +20,7 @@ export function TemplateMapping({ onNext, onPrev }: TemplateMappingProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  console.log(briefData)
+  
 
   const handleDataChange = (updatedData: BriefAnalysisResponse) => {
     // Update Redux store with edited data

@@ -1,7 +1,7 @@
 """
 API routes for copy translation
 """
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
 
 from app.models.translation_models import TranslationRequest, TranslationResponse
@@ -24,7 +24,7 @@ def get_translation_service() -> TranslationService:
 
 @router.post("/translate", response_model=TranslationResponse)
 async def translate_copy(
-    request: TranslationRequest,
+    raw_request: Request,
     translation_service: TranslationService = Depends(get_translation_service)
 ):
     """
@@ -47,6 +47,10 @@ async def translate_copy(
         HTTPException: If translation fails or validation errors occur
     """
     try:
+        # Parse and validate the request body
+        body = await raw_request.json()
+        request = TranslationRequest(**body)
+
         # Validate input
         if not request.copy_text.headline.strip():
             raise HTTPException(
