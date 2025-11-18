@@ -20,7 +20,7 @@ export function TemplateMapping({ onNext, onPrev }: TemplateMappingProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  console.log(briefData)
+  
 
   const handleDataChange = (updatedData: BriefAnalysisResponse) => {
     // Update Redux store with edited data
@@ -61,8 +61,8 @@ export function TemplateMapping({ onNext, onPrev }: TemplateMappingProps) {
         <div className="bg-yellow-500/10 border border-yellow-500/50 rounded-xl p-6 flex items-start gap-4">
           <AlertCircle className="w-6 h-6 text-yellow-400 flex-shrink-0 mt-1" />
           <div>
-            <h3 className="font-semibold text-white mb-2">No Brief Data Available</h3>
-            <p className="text-slate-300 mb-4">
+            <h3 className="font-semibold text-foreground mb-2">No Brief Data Available</h3>
+            <p className="text-foreground mb-4">
               It looks like the brief analysis data is missing. Please go back and upload your creative brief.
             </p>
             <Button onClick={onPrev} variant="outline">
@@ -84,15 +84,15 @@ export function TemplateMapping({ onNext, onPrev }: TemplateMappingProps) {
 
       {/* Loading State */}
       {isGenerating && (
-        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-8 space-y-4">
+        <div className="bg-card dark:bg-card/50 border border-border rounded-xl p-8 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-white">Generating Creative Prompts...</h3>
+            <h3 className="font-semibold text-foreground">Generating Creative Prompts...</h3>
             <Loader2 className="w-5 h-5 text-purple-400 animate-spin" />
           </div>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-muted-foreground">
             Analyzing your brief and creating tailored prompts for image, copy, and video generation...
           </p>
-          <div className="flex-1 bg-slate-800 rounded-full h-2 overflow-hidden">
+          <div className="flex-1 bg-muted rounded-full h-2 overflow-hidden">
             <div className="h-full bg-gradient-to-r from-purple-500 to-pink-500 animate-pulse w-3/4"></div>
           </div>
         </div>
@@ -110,7 +110,7 @@ export function TemplateMapping({ onNext, onPrev }: TemplateMappingProps) {
       )}
 
       {/* Navigation */}
-      <div className="flex justify-between sticky bottom-4 bg-slate-950/80 backdrop-blur-sm border border-slate-800 rounded-xl p-4">
+      <div className="flex justify-between sticky bottom-4 bg-background/80 backdrop-blur-sm border border-border rounded-xl p-4">
         <Button onClick={onPrev} variant="outline" size="lg" disabled={isGenerating}>
           Back to Upload
         </Button>

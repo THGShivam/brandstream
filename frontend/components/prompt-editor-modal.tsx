@@ -106,12 +106,12 @@ export function PromptEditorModal({
         <div className="flex-1 overflow-y-auto py-4">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-white">Prompt Content</label>
+              <label className="text-sm font-medium text-foreground">Prompt Content</label>
               <div className="flex items-center gap-2">
                 {hasChanges && (
                   <span className="text-xs text-amber-400">• Unsaved changes</span>
                 )}
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-muted-foreground">
                   {editedValue.length} characters
                 </span>
               </div>
@@ -130,7 +130,7 @@ export function PromptEditorModal({
             variant="outline"
             onClick={handleReset}
             disabled={!hasChanges}
-            className="bg-transparent border-slate-700"
+            className="bg-transparent border-border"
           >
             <RotateCcw className="w-4 h-4 mr-2" />
             Reset
@@ -138,7 +138,7 @@ export function PromptEditorModal({
           <Button
             variant="outline"
             onClick={handleCancel}
-            className="bg-transparent border-slate-700"
+            className="bg-transparent border-border"
           >
             Cancel
           </Button>

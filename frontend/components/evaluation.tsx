@@ -75,7 +75,7 @@ export function Evaluation() {
         >
           {showScores ? "✓ View Scores" : "📊 View Scores"}
         </Button>
-        <Button className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 py-6">
+        <Button className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-foreground hover:from-purple-600 hover:to-pink-600 py-6">
           🔄 Regenerate With Feedback
         </Button>
       </div>

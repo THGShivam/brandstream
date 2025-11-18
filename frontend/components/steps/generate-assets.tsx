@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { useState, useRef } from "react"
 import { useAppSelector, useAppDispatch } from "@/services/store/hooks"
 import { updateImagePrompt, updateCopyPrompt, updateVideoPrompt } from "@/services/store/slices/creativeSlice"
-import { setGeneratedImages, setGeneratedVideo, setGeneratedCopies, setAssetsGenerating, setAssetsError } from "@/services/store/slices/assetsSlice"
+import { setGeneratedImages, setGeneratedVideo, setGeneratedCopies, setProductSkuImage, setAssetsGenerating, setAssetsError } from "@/services/store/slices/assetsSlice"
 import { PromptEditorModal } from "@/components/prompt-editor-modal"
 import { generateAssets } from "@/services/api"
 
@@ -119,10 +119,12 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
 
     setUploadedSKU(file)
 
-    // Create preview
+    // Create preview and store in Redux
     const reader = new FileReader()
     reader.onloadend = () => {
-      setSKUPreview(reader.result as string)
+      const result = reader.result as string
+      setSKUPreview(result)
+      dispatch(setProductSkuImage(result))
     }
     reader.readAsDataURL(file)
   }
@@ -300,8 +302,8 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
     <div className="space-y-8">
       {/* Header */}
       <div className="space-y-4">
-        <h2 className="text-3xl font-bold text-white">Generate Creative Assets</h2>
-        <p className="text-lg text-slate-400">
+        <h2 className="text-3xl font-bold text-foreground">Generate Creative Assets</h2>
+        <p className="text-lg text-muted-foreground">
           Upload product SKU and configure generation settings for{' '}
           <span className="text-purple-400 font-medium">{briefData?.brand_name.value || 'your brand'}</span>
         </p>
@@ -313,25 +315,25 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-green-400" />
-              <h3 className="font-semibold text-white">Creative Prompts Generated</h3>
+              <h3 className="font-semibold text-foreground">Creative Prompts Generated</h3>
             </div>
           </div>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-muted-foreground">
             AI-generated prompts are ready for asset creation. Click on any prompt to view and edit the full content.
           </p>
           <div className="grid md:grid-cols-3 gap-4">
             {/* Image Prompt */}
-            <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4 space-y-3">
+            <div className="bg-card dark:bg-card/50 border border-border rounded-lg p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <ImageIcon className="w-4 h-4 text-cyan-400" />
-                <span className="text-white font-medium text-sm">Image Prompt</span>
+                <span className="text-foreground font-medium text-sm">Image Prompt</span>
               </div>
-              <p className="text-slate-400 text-xs line-clamp-3">{creativePrompts.image_prompt}</p>
+              <p className="text-muted-foreground text-xs line-clamp-3">{creativePrompts.image_prompt}</p>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handleOpenPromptEditor('image')}
-                className="w-full bg-transparent border-slate-600 hover:border-cyan-500 hover:text-cyan-400 text-xs"
+                className="w-full bg-transparent border-border hover:border-cyan-500 hover:text-cyan-400 text-xs"
               >
                 <Eye className="w-3 h-3 mr-2" />
                 View & Edit
@@ -339,17 +341,17 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
             </div>
 
             {/* Copy Prompt */}
-            <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4 space-y-3">
+            <div className="bg-card dark:bg-card/50 border border-border rounded-lg p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-pink-400" />
-                <span className="text-white font-medium text-sm">Copy Prompt</span>
+                <span className="text-foreground font-medium text-sm">Copy Prompt</span>
               </div>
-              <p className="text-slate-400 text-xs line-clamp-3">{creativePrompts.copy_prompt}</p>
+              <p className="text-muted-foreground text-xs line-clamp-3">{creativePrompts.copy_prompt}</p>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handleOpenPromptEditor('copy')}
-                className="w-full bg-transparent border-slate-600 hover:border-pink-500 hover:text-pink-400 text-xs"
+                className="w-full bg-transparent border-border hover:border-pink-500 hover:text-pink-400 text-xs"
               >
                 <Eye className="w-3 h-3 mr-2" />
                 View & Edit
@@ -357,17 +359,17 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
             </div>
 
             {/* Video Prompt */}
-            <div className="bg-slate-900/50 border border-slate-700 rounded-lg p-4 space-y-3">
+            <div className="bg-card dark:bg-card/50 border border-border rounded-lg p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Video className="w-4 h-4 text-green-400" />
-                <span className="text-white font-medium text-sm">Video Prompt</span>
+                <span className="text-foreground font-medium text-sm">Video Prompt</span>
               </div>
-              <p className="text-slate-400 text-xs line-clamp-3">{creativePrompts.video_prompt}</p>
+              <p className="text-muted-foreground text-xs line-clamp-3">{creativePrompts.video_prompt}</p>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => handleOpenPromptEditor('video')}
-                className="w-full bg-transparent border-slate-600 hover:border-green-500 hover:text-green-400 text-xs"
+                className="w-full bg-transparent border-border hover:border-green-500 hover:text-green-400 text-xs"
               >
                 <Eye className="w-3 h-3 mr-2" />
                 View & Edit
@@ -378,12 +380,12 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
       )}
 
       {/* Product SKU Upload */}
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 space-y-4">
+      <div className="bg-card dark:bg-card/50 border border-border rounded-xl p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-white">Product SKU Image</h3>
-          <span className="text-xs text-slate-500">Required</span>
+          <h3 className="font-semibold text-foreground">Product SKU Image</h3>
+          <span className="text-xs text-muted-foreground">Required</span>
         </div>
-        <p className="text-sm text-slate-400">Upload a high-quality image of your product for asset generation</p>
+        <p className="text-sm text-muted-foreground">Upload a high-quality image of your product for asset generation</p>
 
         <div
           className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${
@@ -391,7 +393,7 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
               ? 'border-purple-500 bg-purple-500/10'
               : uploadedSKU
                 ? 'border-green-500/50 bg-green-500/5'
-                : 'border-slate-700 hover:border-purple-500/50'
+                : 'border-border hover:border-purple-500/50'
           }`}
           onDrop={handleSKUDrop}
           onDragOver={handleSKUDragOver}
@@ -409,17 +411,17 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
           {!uploadedSKU ? (
             <div className="flex flex-col items-center gap-3">
               <div className={`w-14 h-14 rounded-lg flex items-center justify-center transition-colors ${
-                isDragOver ? 'bg-purple-500/20' : 'bg-slate-800'
+                isDragOver ? 'bg-purple-500/20' : 'bg-muted'
               }`}>
                 <Upload className={`w-6 h-6 transition-colors ${
-                  isDragOver ? 'text-purple-400' : 'text-slate-400'
+                  isDragOver ? 'text-purple-400' : 'text-muted-foreground'
                 }`} />
               </div>
               <div>
-                <p className="font-semibold text-white mb-1">
+                <p className="font-semibold text-foreground mb-1">
                   {isDragOver ? 'Drop your image here' : 'Click to upload or drag and drop'}
                 </p>
-                <p className="text-sm text-slate-500">JPG, PNG, or WebP up to 10MB</p>
+                <p className="text-sm text-muted-foreground">JPG, PNG, or WebP up to 10MB</p>
               </div>
             </div>
           ) : (
@@ -428,15 +430,15 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
                 <img
                   src={skuPreview}
                   alt="Product SKU"
-                  className="w-32 h-32 object-contain rounded-lg bg-slate-800"
+                  className="w-32 h-32 object-contain rounded-lg bg-muted"
                 />
               )}
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-green-400" />
-                  <p className="font-semibold text-white">{uploadedSKU.name}</p>
+                  <p className="font-semibold text-foreground">{uploadedSKU.name}</p>
                 </div>
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-muted-foreground">
                   {(uploadedSKU.size / 1024 / 1024).toFixed(2)} MB
                 </p>
               </div>
@@ -447,7 +449,7 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
                   e.stopPropagation()
                   removeSKU()
                 }}
-                className="bg-transparent border-slate-600 hover:border-red-500 hover:text-red-400"
+                className="bg-transparent border-border hover:border-red-500 hover:text-red-400"
               >
                 <X className="w-4 h-4 mr-2" />
                 Remove Image
@@ -459,17 +461,17 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
 
       {/* Output Format Selection */}
       <div className="space-y-6">
-        <h3 className="text-xl font-semibold text-white">Select Output Formats & Models</h3>
+        <h3 className="text-xl font-semibold text-foreground">Select Output Formats & Models</h3>
         <div className="grid gap-6">
           {(Object.entries(formatConfigs) as [OutputFormat, FormatConfig][]).map(([format, config]) => {
             const IconComponent = config.icon
             return (
               <div
                 key={format}
-                className={`bg-slate-900/50 border rounded-xl p-6 transition-all ${
+                className={`bg-card dark:bg-card/50 border rounded-xl p-6 transition-all ${
                   config.enabled
                     ? 'border-purple-500/50 bg-purple-500/5'
-                    : 'border-slate-800 hover:border-slate-700'
+                    : 'border-border hover:border-border'
                 }`}
               >
                 <div className="flex items-start gap-4">
@@ -480,18 +482,18 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
                         type="checkbox"
                         checked={config.enabled}
                         onChange={() => handleFormatToggle(format)}
-                        className="w-5 h-5 rounded border-slate-600 bg-slate-800 text-purple-500 focus:ring-purple-500/50"
+                        className="w-5 h-5 rounded border-border bg-muted text-purple-500 focus:ring-purple-500/50"
                       />
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        config.enabled ? 'bg-purple-500/20' : 'bg-slate-800'
+                        config.enabled ? 'bg-purple-500/20' : 'bg-muted'
                       }`}>
                         <IconComponent className={`w-5 h-5 ${
-                          config.enabled ? 'text-purple-400' : 'text-slate-400'
+                          config.enabled ? 'text-purple-400' : 'text-muted-foreground'
                         }`} />
                       </div>
                       <div>
-                        <h4 className="font-semibold text-white">{format}</h4>
-                        <p className="text-sm text-slate-400">{config.description}</p>
+                        <h4 className="font-semibold text-foreground">{format}</h4>
+                        <p className="text-sm text-muted-foreground">{config.description}</p>
                       </div>
                     </label>
                   </div>
@@ -499,11 +501,11 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
                   {/* Model Selection */}
                   {config.enabled && (
                     <div className="min-w-[200px]">
-                      <label className="block text-sm text-slate-400 mb-2">AI Model</label>
+                      <label className="block text-sm text-muted-foreground mb-2">AI Model</label>
                       <select
                         value={config.model}
                         onChange={(e) => handleModelChange(format, e.target.value)}
-                        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50"
+                        className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50"
                       >
                         {config.models.map((model) => (
                           <option key={model} value={model}>{model}</option>
@@ -516,19 +518,19 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
             )
           })}
         </div>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-muted-foreground">
           {getEnabledFormats().length} format{getEnabledFormats().length !== 1 ? 's' : ''} selected
         </p>
       </div>
 
       {/* Advanced Settings */}
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 space-y-6">
-        <h3 className="font-semibold text-white">Advanced Settings</h3>
+      <div className="bg-card dark:bg-card/50 border border-border rounded-xl p-6 space-y-6">
+        <h3 className="font-semibold text-foreground">Advanced Settings</h3>
 
         {/* Creativity Level */}
         <div>
           <div className="flex justify-between mb-3">
-            <label className="text-sm text-white">Creativity Level</label>
+            <label className="text-sm text-foreground">Creativity Level</label>
             <span className="text-xs text-purple-400 font-medium">{getCreativityLabel(creativityLevel)}</span>
           </div>
           <input
@@ -537,24 +539,24 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
             max="100"
             value={creativityLevel}
             onChange={(e) => setCreativityLevel(Number(e.target.value))}
-            className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+            className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer slider"
             style={{
               background: `linear-gradient(to right, #8b5cf6 0%, #8b5cf6 ${creativityLevel}%, #374151 ${creativityLevel}%, #374151 100%)`
             }}
           />
-          <div className="flex justify-between text-xs text-slate-500 mt-1">
+          <div className="flex justify-between text-xs text-muted-foreground mt-1">
             <span>Conservative</span>
             <span>Experimental</span>
           </div>
         </div>
 
         {/* Variation Controls */}
-        <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-slate-700">
+        <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-border">
           {/* Image Variations */}
           {formatConfigs.Images.enabled && (
             <div>
               <div className="flex justify-between mb-3">
-                <label className="text-sm text-white">Image Variations</label>
+                <label className="text-sm text-foreground">Image Variations</label>
                 <span className="text-xs text-cyan-400 font-medium">{imageVariations}</span>
               </div>
               <input
@@ -563,12 +565,12 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
                 max="5"
                 value={imageVariations}
                 onChange={(e) => setImageVariations(Number(e.target.value))}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+                className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer slider"
                 style={{
                   background: `linear-gradient(to right, #06b6d4 0%, #06b6d4 ${(imageVariations - 1) * 25}%, #374151 ${(imageVariations - 1) * 25}%, #374151 100%)`
                 }}
               />
-              <div className="flex justify-between text-xs text-slate-500 mt-1">
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
                 <span>1</span>
                 <span>5</span>
               </div>
@@ -579,7 +581,7 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
           {formatConfigs.Copy.enabled && (
             <div>
               <div className="flex justify-between mb-3">
-                <label className="text-sm text-white">Copy Variations</label>
+                <label className="text-sm text-foreground">Copy Variations</label>
                 <span className="text-xs text-pink-400 font-medium">{copyVariations}</span>
               </div>
               <input
@@ -588,12 +590,12 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
                 max="5"
                 value={copyVariations}
                 onChange={(e) => setCopyVariations(Number(e.target.value))}
-                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+                className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer slider"
                 style={{
                   background: `linear-gradient(to right, #ec4899 0%, #ec4899 ${(copyVariations - 1) * 25}%, #374151 ${(copyVariations - 1) * 25}%, #374151 100%)`
                 }}
               />
-              <div className="flex justify-between text-xs text-slate-500 mt-1">
+              <div className="flex justify-between text-xs text-muted-foreground mt-1">
                 <span>1</span>
                 <span>5</span>
               </div>
@@ -602,8 +604,8 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
 
           {/* Video Note */}
           {formatConfigs.Video.enabled && (
-            <div className="md:col-span-2 bg-slate-800/50 border border-slate-700 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-sm text-slate-400">
+            <div className="md:col-span-2 bg-muted/50 border border-border rounded-lg p-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Video className="w-4 h-4" />
                 <span>Video generation creates 1 variation only</span>
               </div>
@@ -613,28 +615,28 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
       </div>
 
       {/* Generation Summary */}
-      <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
-        <h3 className="font-semibold text-white mb-4">Generation Summary</h3>
+      <div className="bg-card dark:bg-card/50 border border-border rounded-xl p-6">
+        <h3 className="font-semibold text-foreground mb-4">Generation Summary</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
-            <p className="text-slate-400">Creativity</p>
-            <p className="text-white font-medium">{getCreativityLabel(creativityLevel)}</p>
+            <p className="text-muted-foreground">Creativity</p>
+            <p className="text-foreground font-medium">{getCreativityLabel(creativityLevel)}</p>
           </div>
           {formatConfigs.Images.enabled && (
             <div>
-              <p className="text-slate-400">Image Variations</p>
+              <p className="text-muted-foreground">Image Variations</p>
               <p className="text-cyan-400 font-medium">{imageVariations}</p>
             </div>
           )}
           {formatConfigs.Copy.enabled && (
             <div>
-              <p className="text-slate-400">Copy Variations</p>
+              <p className="text-muted-foreground">Copy Variations</p>
               <p className="text-pink-400 font-medium">{copyVariations}</p>
             </div>
           )}
           {formatConfigs.Video.enabled && (
             <div>
-              <p className="text-slate-400">Video</p>
+              <p className="text-muted-foreground">Video</p>
               <p className="text-green-400 font-medium">1 video</p>
             </div>
           )}
@@ -642,13 +644,13 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
 
         {/* Model Details */}
         {getEnabledFormats().length > 0 && (
-          <div className="mt-4 pt-4 border-t border-slate-700">
-            <p className="text-slate-400 text-sm mb-2">Selected Models:</p>
+          <div className="mt-4 pt-4 border-t border-border">
+            <p className="text-muted-foreground text-sm mb-2">Selected Models:</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {getEnabledFormats().map((format) => (
                 <div key={format} className="flex items-center gap-2">
-                  <span className="text-xs text-slate-500">{format}:</span>
-                  <span className="text-xs text-white font-medium">
+                  <span className="text-xs text-muted-foreground">{format}:</span>
+                  <span className="text-xs text-foreground font-medium">
                     {formatConfigs[format as OutputFormat].model}
                   </span>
                 </div>
@@ -662,8 +664,8 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
       {!isGenerating ? (
         <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-xl p-12 text-center">
           <Play className="w-12 h-12 text-purple-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-white mb-2">Ready to Generate</h3>
-          <p className="text-slate-400 mb-6">
+          <h3 className="text-xl font-semibold text-foreground mb-2">Ready to Generate</h3>
+          <p className="text-muted-foreground mb-6">
             {formatConfigs.Images.enabled && (
               <span className="block">{imageVariations} image{imageVariations !== 1 ? 's' : ''}</span>
             )}
@@ -677,7 +679,7 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
               With {getCreativityLabel(creativityLevel).toLowerCase()} creativity
             </span>
             {getEnabledFormats().length > 0 && (
-              <span className="block mt-2 text-xs text-slate-500">
+              <span className="block mt-2 text-xs text-muted-foreground">
                 Using: {getEnabledFormats().map(format =>
                   formatConfigs[format as OutputFormat].model
                 ).join(", ")}
@@ -700,24 +702,24 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
           )}
         </div>
       ) : (
-        <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-8 space-y-4">
+        <div className="bg-card dark:bg-card/50 border border-border rounded-xl p-8 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-white">Generating Assets...</h3>
-            <span className="text-sm text-slate-400">
+            <h3 className="font-semibold text-foreground">Generating Assets...</h3>
+            <span className="text-sm text-muted-foreground">
               {getCreativityLabel(creativityLevel)} creativity
             </span>
           </div>
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <div className="flex-1 bg-slate-800 rounded-full h-3 overflow-hidden">
+              <div className="flex-1 bg-muted rounded-full h-3 overflow-hidden">
                 <div
                   className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500"
                   style={{ width: `${generationProgress}%` }}
                 ></div>
               </div>
-              <span className="text-sm font-medium text-white min-w-[3rem]">{Math.round(generationProgress)}%</span>
+              <span className="text-sm font-medium text-foreground min-w-[3rem]">{Math.round(generationProgress)}%</span>
             </div>
-            <p className="text-sm text-slate-400">
+            <p className="text-sm text-muted-foreground">
               {generationProgress < 20
                 ? "Analyzing your brief and product SKU..."
                 : generationProgress < 40
