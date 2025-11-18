@@ -1,6 +1,7 @@
 "use client"
 
 import { Download, ArrowLeft, Image as ImageIcon, Video, FileText, Copy, ChevronDown, TrendingUp, Languages, Loader2, RotateCcw } from "lucide-react"
+import { Download, ArrowLeft, Image as ImageIcon, Video, FileText, Copy, ChevronDown, TrendingUp, Edit3 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAppSelector, useAppDispatch } from "@/services/store/hooks"
 import { setImageEvaluation, setEvaluating } from "@/services/store/slices/assetsSlice"
@@ -9,6 +10,7 @@ import { ScoreBar } from "@/components/ui/score-bar"
 import JSZip from "jszip"
 import { saveAs } from "file-saver"
 import { useEffect, useState } from "react"
+import { ImageEditorModal } from "@/components/image-editor-modal"
 import {
   Accordion,
   AccordionContent,
@@ -107,6 +109,13 @@ export function ReviewExport({ onPrev }: ReviewExportProps) {
       return updated
     })
   }
+  // Image editor state
+  const [editingImage, setEditingImage] = useState<{
+    variationNumber: number
+    imageBase64: string
+    mimeType: string
+  } | null>(null)
+  const [editedImages, setEditedImages] = useState<Map<number, string>>(new Map())
 
   // Evaluate images when component mounts (runs in background, doesn't block UI)
   useEffect(() => {
@@ -193,22 +202,43 @@ export function ReviewExport({ onPrev }: ReviewExportProps) {
     // Optional: Show a toast notification
   }
 
+  const openImageEditor = (variationNumber: number, imageBase64: string, mimeType: string) => {
+    setEditingImage({
+      variationNumber,
+      imageBase64: editedImages.get(variationNumber) || imageBase64,
+      mimeType
+    })
+  }
+
+  const handleImageEditSave = (editedImageBase64: string) => {
+    if (editingImage) {
+      setEditedImages(prev => new Map(prev.set(editingImage.variationNumber, editedImageBase64)))
+      setEditingImage(null)
+    }
+  }
+
+  const getImageBase64 = (variationNumber: number, originalBase64: string) => {
+    return editedImages.get(variationNumber) || originalBase64
+  }
+
   
   const downloadAllAssets = async () => {
     const zip = new JSZip()
     const brandName = briefData?.brand_name.value || 'campaign'
 
-    // Add images to zip
+    // Add images to zip (use edited versions if available)
     if (generatedImages.length > 0) {
       const imagesFolder = zip.folder('images')
       generatedImages.forEach((img) => {
-        const byteCharacters = atob(img.image_base64)
+        const imageBase64 = getImageBase64(img.variation_number, img.image_base64)
+        const byteCharacters = atob(imageBase64)
         const byteNumbers = new Array(byteCharacters.length)
         for (let i = 0; i < byteCharacters.length; i++) {
           byteNumbers[i] = byteCharacters.charCodeAt(i)
         }
         const byteArray = new Uint8Array(byteNumbers)
-        imagesFolder?.file(`${brandName}_image_variation_${img.variation_number}.png`, byteArray)
+        const suffix = editedImages.has(img.variation_number) ? '_edited' : ''
+        imagesFolder?.file(`${brandName}_image_variation_${img.variation_number}${suffix}.png`, byteArray)
       })
     }
 
@@ -322,16 +352,24 @@ export function ReviewExport({ onPrev }: ReviewExportProps) {
                   {/* Image Preview */}
                   <div className="aspect-square bg-card dark:bg-card/50 flex items-center justify-center relative overflow-hidden">
                     <img
-                      src={`data:${image.mime_type};base64,${image.image_base64}`}
+                      src={`data:${image.mime_type};base64,${getImageBase64(image.variation_number, image.image_base64)}`}
                       alt={`Generated variation ${image.variation_number}`}
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-linear-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
-                    {/* Hover overlay with download button */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    {/* Hover overlay with edit and download buttons */}
+                    <div className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <Button
-                        onClick={() => downloadSingleImage(image.image_base64, image.variation_number, image.mime_type)}
+                        onClick={() => openImageEditor(image.variation_number, getImageBase64(image.variation_number, image.image_base64), image.mime_type)}
+                        size="sm"
+                        className="bg-purple-500/90 hover:bg-purple-600 text-white"
+                      >
+                        <Edit3 className="w-4 h-4 mr-2" />
+                        Edit
+                      </Button>
+                      <Button
+                        onClick={() => downloadSingleImage(getImageBase64(image.variation_number, image.image_base64), image.variation_number, image.mime_type)}
                         size="sm"
                         className="bg-white/90 hover:bg-white text-foreground"
                       >
@@ -356,6 +394,27 @@ export function ReviewExport({ onPrev }: ReviewExportProps) {
                       >
                         <Download className="w-3 h-3" />
                       </Button>
+                        <h4 className="font-medium text-white text-sm">Variation {image.variation_number}</h4>
+                        <p className="text-xs text-slate-500 mt-1">PNG Image{editedImages.has(image.variation_number) ? ' • Edited' : ''}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openImageEditor(image.variation_number, getImageBase64(image.variation_number, image.image_base64), image.mime_type)}
+                          className="bg-transparent border-slate-700 hover:border-purple-500 hover:text-purple-400"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => downloadSingleImage(getImageBase64(image.variation_number, image.image_base64), image.variation_number, image.mime_type)}
+                          className="bg-transparent border-slate-700 hover:border-purple-500 hover:text-purple-400"
+                        >
+                          <Download className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </div>
 
                     {/* Evaluation Scores */}
@@ -439,7 +498,7 @@ export function ReviewExport({ onPrev }: ReviewExportProps) {
               <div className="border border-border rounded-xl overflow-hidden hover:border-green-500/50 transition-all hover:shadow-lg hover:shadow-green-500/10">
             <div className="aspect-video bg-card dark:bg-card/50 flex items-center justify-center">
               <video
-                src={generatedVideo.video_url || `data:${generatedVideo.mime_type};base64,${generatedVideo.video_base64}`}
+                src={`data:${generatedVideo.mime_type};base64,${generatedVideo.video_base64}`}
                 controls
                 className="w-full h-full"
               />
@@ -640,6 +699,17 @@ export function ReviewExport({ onPrev }: ReviewExportProps) {
           Back
         </Button>
       </div>
+
+      {/* Image Editor Modal */}
+      {editingImage && (
+        <ImageEditorModal
+          open={true}
+          onOpenChange={(open) => !open && setEditingImage(null)}
+          imageBase64={editingImage.imageBase64}
+          mimeType={editingImage.mimeType}
+          onSave={handleImageEditSave}
+        />
+      )}
     </div>
   )
 }
