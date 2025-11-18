@@ -1,0 +1,267 @@
+import React from 'react';
+import { useAppSelector } from '../../store/hooks';
+import { selectLoadingStates, selectProductInfo, selectEmailCampaign, selectKeywords, selectVideo, selectThreeSixty } from '../../store/slices/aiContentSlice';
+import type { ToolPanelProps, EditorTool } from '../../types/interfaces/editor';
+import type { BaseComponentProps } from '../../types/interfaces/common';
+
+// Static imports to avoid dynamic chunk fetch issues in dev
+import RetouchPanel from '../tools/RetouchPanel';
+import CropPanel from '../tools/CropPanel';
+import AdjustPanel from '../tools/AdjustPanel';
+import FilterPanel from '../tools/FilterPanel';
+import ProductPanel from '../tools/ProductPanel';
+import EmailPanel from '../tools/EmailPanel';
+import KeywordsPanel from '../tools/KeywordsPanel';
+import VideoPanel from '../tools/VideoPanel';
+import ThreeSixtyPanel from '../tools/ThreeSixtyPanel';
+
+interface ToolPanelComponentProps extends BaseComponentProps, ToolPanelProps {}
+
+/**
+ * Tool configuration for each editing tool
+ */
+const TOOL_CONFIG: Record<EditorTool, {
+  label: string;
+  icon: React.ReactNode;
+  description: string;
+}> = {
+  retouch: {
+    label: 'Retouch',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+      </svg>
+    ),
+    description: 'Click on image to edit specific areas'
+  },
+  crop: {
+    label: 'Crop',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-10 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2" />
+      </svg>
+    ),
+    description: 'Crop and resize your image'
+  },
+  adjust: {
+    label: 'Adjust',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4" />
+      </svg>
+    ),
+    description: 'Adjust brightness, contrast, and more'
+  },
+  filters: {
+    label: 'Filters',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m-9 0h10m-10 0a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V6a2 2 0 00-2-2" />
+      </svg>
+    ),
+    description: 'Apply creative filters and effects'
+  },
+  product: {
+    label: 'Product',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+      </svg>
+    ),
+    description: 'Generate product descriptions'
+  },
+  email: {
+    label: 'Email',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+      </svg>
+    ),
+    description: 'Create email marketing campaigns'
+  },
+  keywords: {
+    label: 'Keywords',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+      </svg>
+    ),
+    description: 'Generate SEO keywords'
+  },
+  video: {
+    label: 'Video',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+      </svg>
+    ),
+    description: 'Create videos from images'
+  },
+  '360° View': {
+    label: '360° View',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+    ),
+    description: 'Generate 360° product views'
+  },
+};
+
+// With static imports, we don't need a Suspense fallback
+
+/**
+ * Dynamic tool panel that renders different tools based on active selection
+ */
+export const ToolPanel: React.FC<ToolPanelComponentProps> = ({
+  activeTool,
+  editorState,
+  onToolChange,
+  onAction,
+  className = '',
+  testId = 'tool-panel',
+}) => {
+  /**
+   * Render the tool selector tabs
+   */
+  const renderToolTabs = () => (
+    <div className="flex flex-wrap gap-2 mb-6">
+      {(Object.keys(TOOL_CONFIG) as EditorTool[]).map((tool) => {
+        const config = TOOL_CONFIG[tool];
+        const isActive = activeTool === tool;
+        
+        return (
+          <button
+            key={tool}
+            onClick={() => onToolChange(tool)}
+            className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors border ${
+              isActive
+                ? 'bg-blue-600 text-white border-transparent'
+                : 'bg-surface-secondary text-text-secondary hover:bg-surface-tertiary hover:text-text-primary border-border'
+            }`}
+            title={config.description}
+            data-testid={`${testId}-tab-${tool}`}
+          >
+            {config.icon}
+            <span className="hidden sm:inline">{config.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  /**
+   * Render the active tool panel
+   */
+  const renderActiveToolPanel = () => {
+    // Get AI content loading states
+    const loadingStates = useAppSelector(selectLoadingStates);
+    const productInfo = useAppSelector(selectProductInfo);
+    const emailCampaign = useAppSelector(selectEmailCampaign);
+    const keywords = useAppSelector(selectKeywords);
+    const video = useAppSelector(selectVideo);
+    const threeSixty = useAppSelector(selectThreeSixty);
+
+    switch (activeTool) {
+      case 'retouch':
+        return <RetouchPanel
+          editorState={editorState}
+          onAction={onAction}
+          isLoading={loadingStates.imageEdit || editorState.isLoading}
+        />;
+      
+      case 'crop':
+        return <CropPanel
+          editorState={editorState}
+          onAction={onAction}
+          isLoading={editorState.isLoading}
+        />;
+      
+      case 'adjust':
+        return <AdjustPanel
+          editorState={editorState}
+          onAction={onAction}
+          isLoading={loadingStates.adjustment || editorState.isLoading}
+        />;
+      
+      case 'filters':
+        return <FilterPanel
+          editorState={editorState}
+          onAction={onAction}
+          isLoading={loadingStates.filter || editorState.isLoading}
+        />;
+      
+      case 'product':
+        return <ProductPanel
+          editorState={editorState}
+          onAction={onAction}
+          isLoading={productInfo.isLoading}
+        />;
+      
+      case 'email':
+        return <EmailPanel
+          editorState={editorState}
+          onAction={onAction}
+          isLoading={emailCampaign.isLoading}
+        />;
+      
+      case 'keywords':
+        return <KeywordsPanel
+          editorState={editorState}
+          onAction={onAction}
+          isLoading={keywords.isLoading}
+        />;
+      
+      case 'video':
+        return <VideoPanel
+          editorState={editorState}
+          onAction={onAction}
+          isLoading={video.isLoading}
+        />;
+      
+      case '360° View':
+        return <ThreeSixtyPanel
+          editorState={editorState}
+          onAction={onAction}
+          isLoading={threeSixty.isLoading}
+        />;
+      
+      default:
+        return (
+          <div className="text-center text-text-secondary p-8">
+            <p>Tool not implemented yet</p>
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div 
+      className={`w-full bg-surface border border-border rounded-lg p-6 ${className}`}
+      data-testid={testId}
+    >
+      {/* Tool selector tabs */}
+      {renderToolTabs()}
+      
+      {/* Active tool header */}
+      <div className="mb-4">
+        <div className="flex items-center space-x-2 mb-2">
+          {TOOL_CONFIG[activeTool].icon}
+          <h3 className="text-lg font-semibold text-text-primary">
+            {TOOL_CONFIG[activeTool].label}
+          </h3>
+        </div>
+        <p className="text-sm text-text-secondary">
+          {TOOL_CONFIG[activeTool].description}
+        </p>
+      </div>
+      
+      {/* Active tool panel */}
+      <div className="min-h-[200px]">
+        {renderActiveToolPanel()}
+      </div>
+    </div>
+  );
+};
+
+export default ToolPanel;

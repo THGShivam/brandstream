@@ -231,7 +231,7 @@ export async function generateAssets(params: AssetGenerationParams): Promise<Ass
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}))
-    throw new Error(errorData.detail || `Failed to generate assets: ${response.statusStatus}`)
+    throw new Error(errorData.detail || `Failed to generate assets: ${response.status}`)
   }
 
   return response.json()
@@ -270,6 +270,70 @@ export async function evaluateAdCreative(
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}))
     throw new Error(errorData.detail || `Failed to evaluate ad creative: ${response.statusText}`)
+  }
+
+  return response.json()
+}
+
+/**
+ * Applies AI-powered filter to an image
+ * @param imageBase64 - Base64 encoded image
+ * @param mimeType - MIME type of the image
+ * @param filterPrompt - Text prompt describing the desired filter
+ * @returns Promise with the filtered image data
+ */
+export async function applyImageFilter(
+  imageBase64: string,
+  mimeType: string,
+  filterPrompt: string
+): Promise<{ filtered_image_base64: string; mime_type: string }> {
+  const response = await fetch(`${API_BASE_URL}/api/image/filter`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      image_base64: imageBase64,
+      mime_type: mimeType,
+      filter_prompt: filterPrompt
+    })
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.detail || `Failed to apply filter: ${response.status}`)
+  }
+
+  return response.json()
+}
+
+/**
+ * Applies AI-powered adjustments to an image
+ * @param imageBase64 - Base64 encoded image
+ * @param mimeType - MIME type of the image
+ * @param adjustmentPrompt - Text prompt describing the desired adjustment
+ * @returns Promise with the adjusted image data
+ */
+export async function applyImageAdjustment(
+  imageBase64: string,
+  mimeType: string,
+  adjustmentPrompt: string
+): Promise<{ adjusted_image_base64: string; mime_type: string }> {
+  const response = await fetch(`${API_BASE_URL}/api/image/adjust`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      image_base64: imageBase64,
+      mime_type: mimeType,
+      adjustment_prompt: adjustmentPrompt
+    })
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.detail || `Failed to apply adjustment: ${response.status}`)
   }
 
   return response.json()

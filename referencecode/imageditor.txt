@@ -1,0 +1,191 @@
+import React from 'react';
+import ReactCrop, { Crop, PixelCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
+import type { ImageEditorProps } from '../../types/interfaces/editor';
+import type { BaseComponentProps } from '../../types/interfaces/common';
+
+interface ImageEditorComponentProps extends BaseComponentProps, ImageEditorProps {
+  /** Image reference for crop operations */
+  imgRef: React.RefObject<HTMLImageElement>;
+  /** Current image URL */
+  currentImageUrl: string | null;
+  /** Crop change handler */
+  onCropChange: (crop: Crop, percentCrop: Crop) => void;
+  /** Crop complete handler */
+  onCropComplete: (crop: PixelCrop, percentCrop: Crop) => void;
+}
+
+/**
+ * Main image editor component that handles image display and editing interactions
+ */
+export const ImageEditor: React.FC<ImageEditorComponentProps> = ({
+  currentImage,
+  editorState,
+  onImageClick,
+  onImageLoad,
+  imgRef,
+  currentImageUrl,
+  onCropChange,
+  onCropComplete,
+  className = '',
+  testId = 'image-editor',
+}) => {
+  if (!currentImage || !currentImageUrl) {
+    return (
+      <div 
+        className={`relative bg-black rounded-lg overflow-hidden flex-1 min-h-[400px] flex items-center justify-center ${className}`}
+        data-testid={`${testId}-empty`}
+      >
+        <div className="text-center text-gray-400">
+          <svg
+            className="w-16 h-16 mx-auto mb-4 opacity-50"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={1}
+              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+            />
+          </svg>
+          <p>No image loaded</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div 
+      className={`relative bg-black rounded-lg overflow-hidden flex-1 min-h-[400px] flex items-center justify-center ${className}`}
+      data-testid={testId}
+    >
+      {/* Loading overlay */}
+      {editorState.isLoading && (
+        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
+          <div className="text-center text-white">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-sm">
+              {editorState.videoLoadingMessage || 'Processing...'}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Crop mode with ReactCrop */}
+      {editorState.activeTool === 'crop' ? (
+        <div className="relative max-w-full max-h-full">
+          <ReactCrop
+            crop={editorState.cropConfig.crop}
+            onChange={onCropChange}
+            onComplete={onCropComplete}
+            aspect={editorState.cropConfig.aspect}
+            className="max-w-full max-h-full"
+          >
+            <img
+              ref={imgRef}
+              alt="Image for cropping"
+              src={currentImageUrl}
+              className="max-w-full max-h-full object-contain"
+              onLoad={(e) => {
+                console.log(`🪲 DEBUG: Image loaded in crop mode. Crop config:`, editorState.cropConfig);
+                console.log(`🪲 DEBUG: Image dimensions: ${e.currentTarget.naturalWidth}x${e.currentTarget.naturalHeight}`);
+                onImageLoad(e);
+              }}
+              data-testid={`${testId}-crop-image`}
+            />
+          </ReactCrop>
+          <div className="absolute top-2 left-2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-sm">
+            Crop Mode - Select area to crop
+          </div>
+        </div>
+      ) : (
+        /* Normal editing mode */
+        <div className="relative max-w-full max-h-full">
+          <img
+            ref={imgRef}
+            src={currentImageUrl}
+            alt="Current image"
+            className={`max-w-full max-h-full object-contain ${
+              editorState.activeTool === 'retouch' ? 'cursor-crosshair' : 'cursor-default'
+            }`}
+            onClick={onImageClick}
+            onLoad={onImageLoad}
+            data-testid={`${testId}-main-image`}
+          />
+
+          {/* Hotspot indicator for retouch tool */}
+          {editorState.displayHotspot && editorState.activeTool === 'retouch' && (
+            <div
+              className="absolute w-4 h-4 bg-blue-500 border-2 border-white rounded-full transform -translate-x-1/2 -translate-y-1/2 pointer-events-none animate-pulse"
+              style={{
+                left: editorState.displayHotspot.x,
+                top: editorState.displayHotspot.y,
+              }}
+              data-testid={`${testId}-hotspot`}
+            />
+          )}
+
+          {/* Comparison overlay */}
+          {editorState.isComparing && (
+            <div className="absolute inset-0 bg-black bg-opacity-75 flex items-center justify-center">
+              <div className="text-white text-center">
+                <p className="mb-2">Comparing with original</p>
+                <button
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                  onClick={() => {
+                    // This would be handled by the parent component
+                    console.log('Exit comparison mode');
+                  }}
+                >
+                  Exit Comparison
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Tool-specific overlays */}
+      {editorState.activeTool === 'video' && editorState.threeSixtyProgress > 0 && (
+        <div className="absolute bottom-4 left-4 right-4">
+          <div className="bg-black bg-opacity-75 rounded-lg p-3">
+            <div className="flex items-center justify-between text-white text-sm mb-2">
+              <span>Generating 360° view...</span>
+              <span>{Math.round(editorState.threeSixtyProgress)}%</span>
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-2">
+              <div
+                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${editorState.threeSixtyProgress}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error overlay */}
+      {editorState.error && (
+        <div className="absolute top-4 left-4 right-4">
+          <div className="bg-red-500 bg-opacity-90 text-white p-3 rounded-lg flex items-center justify-between">
+            <span className="text-sm">{editorState.error}</span>
+            <button
+              className="ml-2 text-white hover:text-gray-200"
+              onClick={() => {
+                // This would be handled by the parent component
+                console.log('Clear error');
+              }}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ImageEditor;

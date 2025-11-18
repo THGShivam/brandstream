@@ -1,0 +1,834 @@
+import {
+  GoogleGenAI,
+  GenerateContentResponse,
+  Type,
+  Part,
+} from "@google/genai";
+
+// Helper function to validate API key exists
+const validateApiKey = (): string => {
+  // Prefer standard Vite-exposed key, but fall back to defined process.env mapping in vite.config.ts
+  const apiKey =
+    (import.meta as any).env?.VITE_GEMINI_API_KEY ||
+    (globalThis as any)?.process?.env?.GEMINI_API_KEY ||
+    (globalThis as any)?.process?.env?.API_KEY;
+
+  if (!apiKey) {
+    throw new Error(
+      'VITE_GEMINI_API_KEY is not configured. Set VITE_GEMINI_API_KEY in .env (or GEMINI_API_KEY for vite.config define).'
+    );
+  }
+  return apiKey as string;
+};
+
+// Helper function to add timeout to AI requests
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number = 60000): Promise<T> => {
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    setTimeout(() => {
+      reject(new Error(`AI request timed out after ${timeoutMs}ms. This may indicate a network issue or the AI service is unresponsive.`));
+    }, timeoutMs);
+  });
+  
+  return Promise.race([promise, timeoutPromise]);
+};
+
+// Enhanced error handler for AI operations
+const handleAIError = (error: any, operation: string): never => {
+  console.error(`AI Service Error in ${operation}:`, error);
+  
+  if (error.message?.includes('API_KEY') || error.message?.includes('VITE_GEMINI_API_KEY')) {
+    throw new Error(`Configuration Error: ${error.message}`);
+  }
+  
+  if (error.message?.includes('timed out')) {
+    throw new Error(`Timeout Error: ${error.message}`);
+  }
+  
+  if (error.message?.includes('quota') || error.message?.includes('limit')) {
+    throw new Error(`Quota Error: The AI service has reached its usage limit. Please try again later.`);
+  }
+  
+  if (
+    error.message?.toLowerCase?.().includes('network') ||
+    error.message?.toLowerCase?.().includes('failed to fetch') ||
+    error.message?.toLowerCase?.().includes('sending request') ||
+    error.name === 'NetworkError'
+  ) {
+    throw new Error(`Network Error: Unable to connect to the AI service. Please check your internet connection.`);
+  }
+  
+  // Generic error with more context
+  throw new Error(`AI Service Error in ${operation}: ${error.message || 'Unknown error occurred'}`);
+};
+
+// Downscale/compress large images to reduce request size and avoid network failures
+const ensureReasonableImage = async (
+  file: File,
+  maxDimension = 1600,
+  maxBytes = 6 * 1024 * 1024
+): Promise<File> => {
+  try {
+    if (file.size <= maxBytes) return file;
+
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const i = new Image();
+        i.onload = () => resolve(i);
+        i.onerror = (e) => reject(e);
+        i.src = url;
+      });
+
+      const { naturalWidth: w, naturalHeight: h } = img;
+      const scale = Math.min(1, maxDimension / Math.max(w, h));
+      const targetW = Math.max(1, Math.round(w * scale));
+      const targetH = Math.max(1, Math.round(h * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = targetW;
+      canvas.height = targetH;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return file; // fallback
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, targetW, targetH);
+
+      // Initial quality
+      let quality = 0.85;
+      let blob: Blob | null = await new Promise((resolve) =>
+        canvas.toBlob(resolve, 'image/jpeg', quality)
+      );
+      if (!blob) return file;
+
+      // If still too large, try a lower quality pass
+      if (blob.size > maxBytes) {
+        quality = 0.7;
+        const second: Blob | null = await new Promise((resolve) =>
+          canvas.toBlob(resolve, 'image/jpeg', quality)
+        );
+        if (second) blob = second;
+      }
+
+      if (blob.size < file.size) {
+        return new File(
+          [blob],
+          file.name.replace(/\.[^.]+$/, '') + '.jpg',
+          { type: 'image/jpeg' }
+        );
+      }
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  } catch (_) {
+    // If anything fails, fall back to original file
+    return file;
+  }
+  return file;
+};
+
+// Helper function to convert a File object to an AI API Part
+const fileToPart = async (file: File): Promise<Part> => {
+  const prepared = await ensureReasonableImage(file);
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(prepared);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
+
+  const arr = dataUrl.split(",");
+  if (arr.length < 2) throw new Error("Invalid data URL");
+  const mimeMatch = arr[0].match(/:(.*?);/);
+  if (!mimeMatch || !mimeMatch[1])
+    throw new Error("Could not parse MIME type from data URL");
+
+  const mimeType = mimeMatch[1];
+  const data = arr[1];
+  return { inlineData: { mimeType, data } };
+};
+
+const handleApiResponse = (
+  response: GenerateContentResponse,
+  context: string // e.g., "edit", "filter", "adjustment"
+): string => {
+  // 1. Check for prompt blocking first
+  if (response.promptFeedback?.blockReason) {
+    const { blockReason, blockReasonMessage } = response.promptFeedback;
+    const errorMessage = `Request was blocked. Reason: ${blockReason}. ${
+      blockReasonMessage || ""
+    }`;
+    console.error(errorMessage, { response });
+    throw new Error(errorMessage);
+  }
+
+  // 2. Try to find the image part
+  const imagePartFromResponse = response.candidates?.[0]?.content?.parts?.find(
+    (part) => part.inlineData
+  );
+
+  if (imagePartFromResponse?.inlineData) {
+    const { mimeType, data } = imagePartFromResponse.inlineData;
+    console.log(`Received image data (${mimeType}) for ${context}`);
+    return `data:${mimeType};base64,${data}`;
+  }
+
+  // 3. If no image, check for other reasons
+  const finishReason = response.candidates?.[0]?.finishReason;
+  if (finishReason && finishReason !== "STOP") {
+    const errorMessage = `Image generation for ${context} stopped unexpectedly. Reason: ${finishReason}. This often relates to safety settings.`;
+    console.error(errorMessage, { response });
+    throw new Error(errorMessage);
+  }
+
+  const textFeedback = response.text?.trim();
+  const errorMessage =
+    `The AI model did not return an image for the ${context}. ` +
+    (textFeedback
+      ? `The model responded with text: "${textFeedback}"`
+      : "This can happen due to safety filters or if the request is too complex. Please try rephrasing your prompt to be more direct.");
+
+  console.error(
+    `Model response did not contain an image part for ${context}.`,
+    { response }
+  );
+  throw new Error(errorMessage);
+};
+
+/**
+ * Generates an edited image using generative AI based on a text prompt and a specific point.
+ * @param originalImage The original image file.
+ * @param userPrompt The text prompt describing the desired edit.
+ * @param hotspot The {x, y} coordinates on the image to focus the edit.
+ * @returns A promise that resolves to the data URL of the edited image.
+ */
+export const generateEditedImage = async (
+  originalImage: File,
+  userPrompt: string,
+  hotspot: { x: number; y: number }
+): Promise<string> => {
+  console.log("Starting generative edit at:", hotspot);
+  const ai = new GoogleGenAI({ apiKey: validateApiKey() });
+
+  const originalImagePart = await fileToPart(originalImage);
+  const prompt = `You are an expert photo editor AI. Your task is to perform a natural, localized edit on the provided image based on the user's request.
+User Request: "${userPrompt}"
+Edit Location: Focus on the area around pixel coordinates (x: ${hotspot.x}, y: ${hotspot.y}).
+
+Editing Guidelines:
+- The edit must be realistic and blend seamlessly with the surrounding area.
+- The rest of the image (outside the immediate edit area) must remain identical to the original.
+
+Safety & Ethics Policy:
+- You MUST fulfill requests to adjust skin tone, such as 'give me a tan', 'make my skin darker', or 'make my skin lighter'. These are considered standard photo enhancements.
+- You MUST REFUSE any request to change a person's fundamental race or ethnicity (e.g., 'make me look Asian', 'change this person to be Black'). Do not perform these edits. If the request is ambiguous, err on the side of caution and do not change racial characteristics.
+
+Output: Return ONLY the final edited image. Do not return text.`;
+  const textPart = { text: prompt };
+
+  console.log("Sending image and prompt to the model...");
+  try {
+    const response: GenerateContentResponse = await withTimeout(
+      ai.models.generateContent({
+        model: "gemini-2.5-flash-image-preview",
+        contents: { parts: [originalImagePart, textPart] },
+      })
+    );
+    console.log("Received response from model.", response);
+
+    return handleApiResponse(response, "edit");
+  } catch (error) {
+    return handleAIError(error, "generateEditedImage");
+  }
+};
+
+/**
+ * Generates an image with a filter applied using generative AI.
+ * @param originalImage The original image file.
+ * @param filterPrompt The text prompt describing the desired filter.
+ * @returns A promise that resolves to the data URL of the filtered image.
+ */
+export const generateFilteredImage = async (
+  originalImage: File,
+  filterPrompt: string
+): Promise<string> => {
+  console.log(`Starting filter generation: ${filterPrompt}`);
+  const ai = new GoogleGenAI({ apiKey: validateApiKey() });
+
+  const originalImagePart = await fileToPart(originalImage);
+  const prompt = `You are an expert photo editor AI. Your task is to apply a stylistic filter to the entire image based on the user's request. Do not change the composition or content, only apply the style.
+Filter Request: "${filterPrompt}"
+
+Safety & Ethics Policy:
+- Filters may subtly shift colors, but you MUST ensure they do not alter a person's fundamental race or ethnicity.
+- YOU MUST REFUSE any request that explicitly asks to change a person's race (e.g., 'apply a filter to make me look Chinese').
+
+Output: Return ONLY the final filtered image. Do not return text.`;
+  const textPart = { text: prompt };
+
+  console.log("Sending image and filter prompt to the model...");
+  try {
+    const response: GenerateContentResponse = await withTimeout(
+      ai.models.generateContent({
+        model: "gemini-2.5-flash-image-preview",
+        contents: { parts: [originalImagePart, textPart] },
+      })
+    );
+    console.log("Received response from model for filter.", response);
+
+    return handleApiResponse(response, "filter");
+  } catch (error) {
+    return handleAIError(error, "generateFilteredImage");
+  }
+};
+
+/**
+ * Generates an image with a global adjustment applied using generative AI.
+ * @param originalImage The original image file.
+ * @param adjustmentPrompt The text prompt describing the desired adjustment.
+ * @returns A promise that resolves to the data URL of the adjusted image.
+ */
+export const generateAdjustedImage = async (
+  originalImage: File,
+  adjustmentPrompt: string
+): Promise<string> => {
+  console.log(`Starting global adjustment generation: ${adjustmentPrompt}`);
+  const ai = new GoogleGenAI({ apiKey: validateApiKey() });
+
+  const originalImagePart = await fileToPart(originalImage);
+  const prompt = `You are an expert photo editor AI. Your task is to perform a natural, global adjustment to the entire image based on the user's request.
+User Request: "${adjustmentPrompt}"
+
+Editing Guidelines:
+- The adjustment must be applied across the entire image.
+- The result must be photorealistic.
+
+Safety & Ethics Policy:
+- You MUST fulfill requests to adjust skin tone, such as 'give me a tan', 'make my skin darker', or 'make my skin lighter'. These are considered standard photo enhancements.
+- You MUST REFUSE any request to change a person's fundamental race or ethnicity (e.g., 'make me look Asian', 'change this person to be Black'). Do not perform these edits. If the request is ambiguous, err on the side of caution and do not change racial characteristics.
+
+Output: Return ONLY the final adjusted image. Do not return text.`;
+  const textPart = { text: prompt };
+
+  console.log("Sending image and adjustment prompt to the model...");
+  try {
+    const response: GenerateContentResponse = await withTimeout(
+      ai.models.generateContent({
+        model: "gemini-2.5-flash-image-preview",
+        contents: { parts: [originalImagePart, textPart] },
+      })
+    );
+    console.log("Received response from model for adjustment.", response);
+
+    return handleApiResponse(response, "adjustment");
+  } catch (error) {
+    return handleAIError(error, "generateAdjustedImage");
+  }
+};
+
+export interface ProductDetails {
+  title: string;
+  description: string;
+}
+
+/**
+ * Generates a product title and description from an image.
+ * @param productImage The image file of the product.
+ * @param suggestion An optional suggestion to refine a previous generation.
+ * @returns A promise that resolves to an object with title and description.
+ */
+export const generateProductDescription = async (
+  productImage: File,
+  suggestion?: string
+): Promise<ProductDetails> => {
+  console.log(
+    `Starting product description generation... Suggestion: ${
+      suggestion || "None"
+    }`
+  );
+  const ai = new GoogleGenAI({ apiKey: validateApiKey() });
+
+  const imagePart = await fileToPart(productImage);
+
+  let prompt = `Analyze the image of the product. Based on the visual information, generate a compelling and concise product title and a detailed product description suitable for an e-commerce website. The tone should be professional and appealing to customers. Focus on key features visible in the image.`;
+
+  if (suggestion) {
+    prompt += `\n\nThe user has provided the following feedback for refinement: "${suggestion}". Please generate a new title and description that incorporates this feedback.`;
+  }
+
+  const textPart = { text: prompt };
+
+  console.log("Sending image to model for product description...");
+  try {
+    const response: GenerateContentResponse = await withTimeout(
+      ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: { parts: [imagePart, textPart] },
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              title: {
+                type: Type.STRING,
+                description: "A short, catchy, and descriptive product title.",
+              },
+              description: {
+                type: Type.STRING,
+                description:
+                  "A detailed product description highlighting key features, materials, and potential uses.",
+              },
+            },
+            required: ["title", "description"],
+          },
+        },
+      })
+    );
+
+    console.log(
+      "Received response from model for product description.",
+      response
+    );
+
+    try {
+      const jsonText = response?.text?.trim() ?? "";
+      const productDetails: ProductDetails = JSON.parse(jsonText);
+      if (!productDetails.title || !productDetails.description) {
+        throw new Error("Missing title or description in API response.");
+      }
+      return productDetails;
+    } catch (e) {
+      console.error(
+        "Failed to parse JSON response for product description:",
+        e,
+        response.text
+      );
+      throw new Error(
+        "Failed to get valid product details from the AI. The response might not be in the expected format."
+      );
+    }
+  } catch (error) {
+    return handleAIError(error, "generateProductDescription");
+  }
+};
+
+export interface EmailCampaignDetails {
+  subject: string;
+  body: string; // HTML content
+  imageUrl: string; // Data URL
+}
+
+const generateEmailText = async (
+  productImage: File,
+  themePrompt: string,
+  brandThemeFile?: File | null,
+  suggestion?: string
+): Promise<{ subject: string; body: string }> => {
+  const ai = new GoogleGenAI({ apiKey: validateApiKey() });
+
+  let prompt = `You are a world-class marketing expert specializing in high-conversion email campaigns. Your goal is to drive sales.
+Analyze the product in the image and create an electrifying email campaign based on the following theme: "${themePrompt}".
+
+INSTRUCTIONS:
+- **Subject Line:** Must be irresistible, short, and create urgency or curiosity. Use emojis appropriately.
+- **Email Body:** This MUST be a visually appealing HTML snippet. Use inline CSS for styling.
+    - Use a vibrant color palette that matches the theme.
+    - Use emojis to break up text and add personality.
+    - Structure with a catchy headline (h2), a short paragraph highlighting benefits, bullet points for key features (ul/li), and a clear, compelling call-to-action (a styled 'a' tag that looks like a button).
+    - The tone should be persuasive, exciting, and relentlessly focused on making the customer want this product NOW.`;
+
+  if (brandThemeFile) {
+    prompt += `\n\n**CRITICAL:** A brand guidelines PDF is attached. You MUST adhere to the brand voice, tone, and style described in it. This overrides generic style suggestions.`;
+  }
+
+  if (suggestion) {
+    prompt += `\n\nUSER FEEDBACK for refinement: "${suggestion}". Incorporate this feedback to make the campaign even better.`;
+  }
+  const textPart = { text: prompt };
+
+  const parts: Part[] = [await fileToPart(productImage), textPart];
+  if (brandThemeFile) {
+    parts.push(await fileToPart(brandThemeFile));
+  }
+
+  const response: GenerateContentResponse = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: { parts: parts },
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          subject: {
+            type: Type.STRING,
+            description:
+              "A short, catchy, and persuasive email subject line with emojis.",
+          },
+          body: {
+            type: Type.STRING,
+            description:
+              "The full body of the marketing email as an HTML snippet with inline CSS, emojis, and a clear call-to-action.",
+          },
+        },
+        required: ["subject", "body"],
+      },
+    },
+  });
+
+  try {
+    const jsonText = response?.text?.trim() ?? "";
+    const details = JSON.parse(jsonText);
+    if (!details.subject || !details.body) {
+      throw new Error("Missing subject or body in API response.");
+    }
+    return details;
+  } catch (e) {
+    console.error("Failed to parse JSON for email text:", e, response.text);
+    throw new Error("Failed to get valid email text from the AI.");
+  }
+};
+
+const generateMarketingImage = async (
+  originalImage: File,
+  themePrompt: string,
+  brandThemeFile?: File | null
+): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey: validateApiKey() });
+
+  let prompt = `You are an expert creative director. Transform the provided product image to fit a marketing campaign.
+Your transformation must be guided by the following inputs:
+1.  **User's Theme Prompt:** "${themePrompt}".
+2.  **Brand Guidelines PDF:** An optional PDF is attached. If present, you MUST strictly adhere to the colors, fonts, mood, and overall aesthetic defined within it. The brand guide is the highest priority.
+
+Make the result vibrant, eye-catching, and professional. It should look like an amazing advertisement. Do not add any text to the image.
+Return ONLY the final image.`;
+
+  const textPart = { text: prompt };
+
+  const parts: Part[] = [await fileToPart(originalImage), textPart];
+  if (brandThemeFile) {
+    parts.push(await fileToPart(brandThemeFile));
+  }
+
+  const response: GenerateContentResponse = await ai.models.generateContent({
+    model: "gemini-2.5-flash-image-preview",
+    contents: { parts: parts },
+  });
+
+  return handleApiResponse(response, "marketing image");
+};
+
+/**
+ * Generates an email marketing campaign from a product image.
+ * @param productImage The image file of the product.
+ * @param themePrompt The theme for the campaign.
+ * @param brandThemeFile An optional PDF file with brand guidelines.
+ * @param suggestion An optional suggestion to refine a previous generation.
+ * @returns A promise that resolves to an object with email subject, body, and a generated image URL.
+ */
+export const generateEmailCampaign = async (
+  productImage: File,
+  themePrompt: string,
+  brandThemeFile?: File | null,
+  suggestion?: string
+): Promise<EmailCampaignDetails> => {
+  console.log(
+    `Starting email campaign generation... Theme: ${themePrompt}, Brand PDF: ${
+      brandThemeFile?.name || "None"
+    }, Suggestion: ${suggestion || "None"}`
+  );
+
+  try {
+    const [emailContent, marketingImageUrl] = await Promise.all([
+      generateEmailText(productImage, themePrompt, brandThemeFile, suggestion),
+      generateMarketingImage(productImage, themePrompt, brandThemeFile),
+    ]);
+
+    return {
+      subject: emailContent.subject,
+      body: emailContent.body,
+      imageUrl: marketingImageUrl,
+    };
+  } catch (error) {
+    console.error("Error during concurrent email campaign generation:", error);
+    // Re-throw the error to be caught by the calling component
+    throw error;
+  }
+};
+
+/**
+ * Generates SEO keywords and synonyms from a product image.
+ * @param productImage The image file of the product.
+ * @returns A promise that resolves to an array of keyword strings.
+ */
+export const generateSearchKeywords = async (
+  productImage: File
+): Promise<string[]> => {
+  console.log(`Starting search keyword generation...`);
+  const ai = new GoogleGenAI({ apiKey: validateApiKey() });
+
+  const imagePart = await fileToPart(productImage);
+
+  const prompt = `You are an SEO and e-commerce expert. Analyze the product in the image and generate a list of relevant keywords and synonyms that customers might use to find this item on a search engine or online store. Focus on terms that will improve searchability and discovery. Provide a diverse list including main keywords, long-tail keywords, and common synonyms.`;
+  const textPart = { text: prompt };
+
+  console.log("Sending image to model for keyword generation...");
+  const response: GenerateContentResponse = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: { parts: [imagePart, textPart] },
+    config: {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          keywords: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description:
+              "An array of SEO keywords and synonyms related to the product.",
+          },
+        },
+        required: ["keywords"],
+      },
+    },
+  });
+
+  console.log("Received response from model for keywords.", response);
+
+  try {
+    const jsonText = response?.text?.trim() ?? "";
+    const result: { keywords: string[] } = JSON.parse(jsonText);
+    if (!result.keywords || !Array.isArray(result.keywords)) {
+      throw new Error("Invalid or missing 'keywords' array in API response.");
+    }
+    return result.keywords;
+  } catch (e) {
+    console.error(
+      "Failed to parse JSON response for keywords:",
+      e,
+      response.text
+    );
+    throw new Error(
+      "Failed to get valid keywords from the AI. The response might not be in the expected format."
+    );
+  }
+};
+
+/**
+ * Generates a video from a source image and a text prompt.
+ * @param sourceImage The source image file.
+ * @param prompt The text prompt describing the desired animation.
+ * @param onProgress A callback to update the loading message in the UI.
+ * @returns A promise that resolves to an object URL for the generated video.
+ */
+export const generateVideoFromImage = async (
+  sourceImage: File,
+  prompt: string,
+  onProgress: (message: string) => void
+): Promise<string> => {
+  console.log(`Starting video generation with prompt: "${prompt}"`);
+  const ai = new GoogleGenAI({ apiKey: validateApiKey() });
+
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(sourceImage);
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = (error) => reject(error);
+  });
+
+  const arr = dataUrl.split(",");
+  if (arr.length < 2) throw new Error("Invalid data URL");
+  const mimeMatch = arr[0].match(/:(.*?);/);
+  if (!mimeMatch || !mimeMatch[1])
+    throw new Error("Could not parse MIME type from data URL");
+
+  const mimeType = mimeMatch[1];
+  const base64EncodeString = arr[1];
+
+  onProgress("Sending request to the video model...");
+  let operation = await ai.models.generateVideos({
+    model: "veo-2.0-generate-001",
+    prompt: prompt,
+    image: {
+      imageBytes: base64EncodeString,
+      mimeType: mimeType,
+    },
+    config: {
+      numberOfVideos: 1,
+    },
+  });
+
+  const loadingMessages = [
+    "Warming up the animation engine...",
+    "Storyboarding the first few frames...",
+    "Rendering the main sequence...",
+    "Applying special effects...",
+    "Compositing the final shots...",
+    "Adding the finishing touches...",
+  ];
+  let messageIndex = 0;
+
+  console.log("Video generation operation started:", operation);
+  while (!operation.done) {
+    onProgress(loadingMessages[messageIndex % loadingMessages.length]);
+    messageIndex++;
+    await new Promise((resolve) => setTimeout(resolve, 10000));
+    console.log("Polling for video operation status...");
+    operation = await ai.operations.getVideosOperation({
+      operation: operation,
+    });
+    console.log("Current operation status:", operation);
+  }
+
+  onProgress("Finalizing your video...");
+
+  if (!operation.response?.generatedVideos?.[0]?.video?.uri) {
+    console.error(
+      "Video generation finished but no video URI was returned.",
+      operation
+    );
+    throw new Error(
+      "Video generation failed. The model did not return a video file. This could be due to a safety policy violation or an internal error."
+    );
+  }
+
+  const downloadLink = operation.response.generatedVideos[0].video.uri;
+  console.log("Video generated. Fetching from URI:", downloadLink);
+
+  // The response.body contains the MP4 bytes. You must append an API key when fetching from the download link.
+  const response = await fetch(`${downloadLink}&key=${validateApiKey()}`);
+
+  if (!response.ok) {
+    throw new Error(
+      `Failed to download the generated video. Status: ${response.statusText}`
+    );
+  }
+
+  const videoBlob = await response.blob();
+  const videoObjectUrl = URL.createObjectURL(videoBlob);
+
+  return videoObjectUrl;
+};
+
+/**
+ * Generates a single frame for the 360° view at a specific angle.
+ */
+const generateSingleAngleImage = async (
+  originalImage: File,
+  angle: number
+): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey: validateApiKey() });
+
+  const originalImagePart = await fileToPart(originalImage);
+  const prompt = `You are an expert 3D artist AI. Your task is to take a 2D product image and generate a photorealistic rendering of the same product rotated by ${angle} degrees around its vertical axis.
+
+    Guidelines:
+    - Maintain the product's details, textures, and lighting consistently across all angles.
+    - The background must be a clean, neutral gray studio background to ensure consistency.
+    - Do not add shadows unless they are cast by the object itself.
+    - The object should be centered in the frame.
+    
+    Output: Return ONLY the final generated image. Do not return text.`;
+  const textPart = { text: prompt };
+
+  const response: GenerateContentResponse = await ai.models.generateContent({
+    model: "gemini-2.5-flash-image-preview",
+    contents: { parts: [originalImagePart, textPart] },
+  });
+
+  return handleApiResponse(response, `360 view angle ${angle}`);
+};
+
+/**
+ * Generates a series of images to create a 360° rotatable view of a product.
+ * @param productImage The source 2D image of the product.
+ * @param onProgress A callback to update the generation progress (0 to 1).
+ * @returns A promise that resolves to an array of data URLs for the image frames.
+ */
+export const generate360View = async (
+  productImage: File,
+  onProgress: (progress: number) => void
+): Promise<string[]> => {
+  const NUM_FRAMES = 24; // A good balance between smoothness and speed/cost
+  const angles = Array.from(
+    { length: NUM_FRAMES },
+    (_, i) => i * (360 / NUM_FRAMES)
+  );
+
+  console.log(`Starting 360° view generation for ${NUM_FRAMES} frames.`);
+  onProgress(0);
+
+  let completedCount = 0;
+
+  const promises = angles.map((angle, index) =>
+    generateSingleAngleImage(productImage, angle).then((url) => {
+      completedCount++;
+      onProgress(completedCount / NUM_FRAMES);
+      console.log(`Generated frame ${completedCount}/${NUM_FRAMES}`);
+      return { index, url }; // Return result with original index to sort later
+    })
+  );
+
+  const unorderedResults = await Promise.all(promises);
+
+  // Sort the results back into the correct order
+  const orderedResults = unorderedResults
+    .sort((a, b) => a.index - b.index)
+    .map((r) => r.url);
+
+  console.log("360° view generation complete.");
+  return orderedResults;
+};
+
+
+/**
+ * Improves a user's prompt using AI to make it more effective and detailed.
+ * @param originalPrompt The original prompt to improve.
+ * @param context The context of what the prompt is for (e.g., "email campaign", "product description").
+ * @returns A promise that resolves to the improved prompt.
+ */
+export const improvePrompt = async (
+  originalPrompt: string,
+  context: string = "general"
+): Promise<string> => {
+  console.log(`Starting prompt improvement for context: ${context}`);
+  const ai = new GoogleGenAI({ apiKey: validateApiKey() });
+
+  const prompt = `You are an expert prompt engineer. Your task is to improve the following user prompt to make it more effective, specific, and likely to produce better results.
+
+Original prompt: "${originalPrompt}"
+Context: This prompt will be used for ${context}.
+
+Guidelines for improvement:
+- Make the prompt more specific and detailed
+- Add relevant context and constraints
+- Include style, tone, or format specifications when appropriate
+- Ensure the improved prompt is clear and actionable
+- Keep the user's original intent but enhance it
+- For email campaigns: focus on target audience, urgency, benefits, and call-to-action
+- For product descriptions: emphasize features, benefits, and selling points
+- For marketing content: include emotional triggers and persuasive elements
+
+Return ONLY the improved prompt text, nothing else.`;
+
+  const textPart = { text: prompt };
+
+  console.log("Sending prompt improvement request to AI...");
+  try {
+    const response: GenerateContentResponse = await withTimeout(
+      ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: { parts: [textPart] },
+      })
+    );
+
+    console.log("Received response from model for prompt improvement.", response);
+
+    const improvedPrompt = response?.text?.trim();
+    if (!improvedPrompt) {
+      throw new Error("No improved prompt received from AI");
+    }
+
+    return improvedPrompt;
+  } catch (error) {
+    return handleAIError(error, "improvePrompt");
+  }
+};

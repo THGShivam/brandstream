@@ -1,0 +1,62 @@
+import React, { useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { setActiveTab, selectActiveTab } from '../store/slices/uiSlice';
+import Home from './Home';
+import { Tab } from '../store/types';
+
+const ImageEditor: React.FC = () => {
+  const { tool } = useParams<{ tool?: string }>();
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const activeTab = useAppSelector(selectActiveTab);
+
+  // Map URL paths to tabs
+  const pathToTab: Record<string, Tab> = {
+    'retouch': 'retouch',
+    'adjust': 'adjust',
+    'filters': 'filters',
+    'crop': 'crop'
+  };
+
+  // Map tabs to URL paths
+  const tabToPath: Record<Tab, string> = {
+    'retouch': '/editor/retouch',
+    'adjust': '/editor/adjust',
+    'filters': '/editor/filters',
+    'crop': '/editor/crop',
+    'product': '/ai-content/product',
+    'email': '/ai-content/email',
+    'keywords': '/ai-content/keywords',
+    'video': '/media/video',
+    '360° View': '/media/360'
+  };
+
+  useEffect(() => {
+    if (tool && pathToTab[tool]) {
+      // Update active tab based on URL
+      const newTab = pathToTab[tool];
+      if (activeTab !== newTab) {
+        dispatch(setActiveTab(newTab));
+      }
+    } else if (!tool) {
+      // Default to retouch if no specific tool is specified
+      navigate('/editor/retouch', { replace: true });
+    } else {
+      // Invalid tool path, redirect to default
+      navigate('/editor/retouch', { replace: true });
+    }
+  }, [tool, dispatch, navigate, activeTab]);
+
+  // Update URL when active tab changes (for programmatic tab changes)
+  useEffect(() => {
+    const expectedPath = tabToPath[activeTab];
+    if (expectedPath && expectedPath.startsWith('/editor/') && window.location.pathname !== expectedPath) {
+      navigate(expectedPath, { replace: true });
+    }
+  }, [activeTab, navigate]);
+
+  return <Home />;
+};
+
+export default ImageEditor;
