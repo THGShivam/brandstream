@@ -29,22 +29,30 @@ class Config:
 
     @classmethod
     def initialize_vertex_ai(cls):
-        """Initialize Vertex AI with service account credentials"""
-        if not cls.SERVICE_ACCOUNT_JSON or not cls.PROJECT_ID:
-            print("Warning: SERVICE_ACCOUNT_JSON and PROJECT_ID not configured")
+        """Initialize Vertex AI with service account credentials or ADC"""
+        if not cls.PROJECT_ID:
+            print("Warning: PROJECT_ID not configured")
             return False
 
         try:
-            # Validate JSON
-            json.loads(cls.SERVICE_ACCOUNT_JSON)
+            # If running on Cloud Run (or GCP), use Application Default Credentials
+            # Otherwise, use SERVICE_ACCOUNT_JSON from .env for local development
+            if cls.SERVICE_ACCOUNT_JSON:
+                # Validate JSON
+                json.loads(cls.SERVICE_ACCOUNT_JSON)
 
-            # Create temporary credentials file
-            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as temp_file:
-                temp_file.write(cls.SERVICE_ACCOUNT_JSON)
-                credentials_path = temp_file.name
+                # Create temporary credentials file
+                with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as temp_file:
+                    temp_file.write(cls.SERVICE_ACCOUNT_JSON)
+                    credentials_path = temp_file.name
 
-            # Set credentials and initialize Vertex AI
-            os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials_path
+                # Set credentials
+                os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = credentials_path
+                print("Using service account from environment variable")
+            else:
+                print("Using Application Default Credentials (ADC)")
+
+            # Initialize Vertex AI
             vertexai.init(project=cls.PROJECT_ID, location=cls.LOCATION)
             print(f"Vertex AI initialized with project: {cls.PROJECT_ID}")
             return True
@@ -59,7 +67,7 @@ class Config:
     @classmethod
     def is_configured(cls) -> bool:
         """Check if required configuration is available"""
-        return bool(cls.SERVICE_ACCOUNT_JSON and cls.PROJECT_ID)
+        return bool(cls.PROJECT_ID)
 
 
 # Initialize Vertex AI on module import
