@@ -83,13 +83,21 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 /**
  * Analyzes a creative brief by sending it to the backend API
- * @param file - The uploaded file (PDF or DOCX)
+ * @param fileOrText - Either the uploaded file (PDF or DOCX) or plain text string
  * @returns Promise with the analyzed brief data
  */
-export async function analyzeBrief(file: File): Promise<BriefAnalysisResponse> {
+export async function analyzeBrief(fileOrText: File | string): Promise<BriefAnalysisResponse> {
   const formData = new FormData()
-  formData.append('file', file)
-  formData.append('text', '') // Empty text as per requirement
+
+  if (typeof fileOrText === 'string') {
+    // Text input
+    formData.append('file', '') // Empty file
+    formData.append('text', fileOrText)
+  } else {
+    // File input
+    formData.append('file', fileOrText)
+    formData.append('text', '') // Empty text
+  }
 
   const response = await fetch(`${API_BASE_URL}/api/analyze-brief`, {
     method: 'POST',
