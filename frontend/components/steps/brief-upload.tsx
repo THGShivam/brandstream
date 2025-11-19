@@ -84,14 +84,20 @@ export function BriefUpload({ onNext }: BriefUploadProps) {
   }
 
   const handleContinue = async () => {
-    if (!uploadedFile) return
+    // Check if we have either file or text (minimum 100 characters)
+    const hasValidInput = uploadedFile || (briefText.trim().length >= 100)
+    if (!hasValidInput) return
 
     setIsAnalyzing(true)
     setError(null)
     dispatch(setBriefLoading(true))
 
     try {
-      const analysisData = await analyzeBrief(uploadedFile)
+      // If file is uploaded, use file; otherwise use text
+      const analysisData = uploadedFile
+        ? await analyzeBrief(uploadedFile)
+        : await analyzeBrief(briefText.trim())
+
       // Dispatch to Redux store
       dispatch(setBriefData(analysisData))
       onNext()
@@ -105,6 +111,9 @@ export function BriefUpload({ onNext }: BriefUploadProps) {
       dispatch(setBriefLoading(false))
     }
   }
+
+  // Check if continue button should be enabled
+  const canContinue = uploadedFile !== null || briefText.trim().length >= 100
 
   return (
     <div className="space-y-8">
@@ -210,9 +219,11 @@ export function BriefUpload({ onNext }: BriefUploadProps) {
           placeholder="Paste your creative brief here... Include details about your brand, target audience, campaign objectives, key messages, and any specific requirements."
           className="w-full h-40 bg-muted/50 border border-border rounded-lg p-4 text-foreground placeholder-slate-500 resize-none focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-colors"
         />
-        <div className="flex justify-between items-center text-xs text-muted-foreground">
-          <span>{briefText.length} characters</span>
-          <span>Minimum 100 characters recommended</span>
+        <div className="flex justify-between items-center text-xs">
+          <span className={briefText.trim().length >= 100 ? 'text-green-400' : 'text-muted-foreground'}>
+            {briefText.trim().length} characters
+          </span>
+          <span className="text-muted-foreground">Minimum 100 characters required</span>
         </div>
       </div>
 
@@ -294,7 +305,7 @@ Season: Oct end`
           onClick={handleContinue}
           size="lg"
           className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-          disabled={!uploadedFile || isAnalyzing}
+          disabled={!canContinue || isAnalyzing}
         >
           {isAnalyzing ? (
             <>

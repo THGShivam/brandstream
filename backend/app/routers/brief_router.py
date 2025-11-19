@@ -1,7 +1,7 @@
 """
 API routes for creative brief analysis
 """
-from typing import Optional
+from typing import Optional, Union
 from fastapi import APIRouter, File, UploadFile, Form, HTTPException, Depends
 from fastapi.responses import JSONResponse
 
@@ -12,6 +12,9 @@ from app.config import Config
 
 
 router = APIRouter(prefix="/api", tags=["brief-analysis"])
+
+# Minimum character requirement for text input
+MIN_TEXT_LENGTH = 100
 
 
 def get_gemini_service() -> GeminiService:
@@ -26,7 +29,7 @@ def get_gemini_service() -> GeminiService:
 
 @router.post("/analyze-brief", response_model=BriefAnalysisResponse)
 async def analyze_brief(
-    file: Optional[UploadFile] = File(None, description="Creative brief file (PDF or DOCX)"),
+    file: Union[UploadFile, str, None] = File(None, description="Creative brief file (PDF or DOCX)"),
     text: Optional[str] = Form(None, description="Creative brief as plain text"),
     gemini_service: GeminiService = Depends(get_gemini_service)
 ):
@@ -35,21 +38,39 @@ async def analyze_brief(
 
     Accepts either:
     - A file upload (PDF or DOCX format)
-    - Plain text via form data
+    - Plain text via form data (minimum 100 characters)
 
     Returns structured brief analysis with extracted and auto-generated fields.
 
     Args:
         file: Optional file upload (PDF or DOCX)
-        text: Optional plain text brief
+        text: Optional plain text brief (minimum 100 characters)
         gemini_service: Injected Gemini service
 
     Returns:
         BriefAnalysisResponse: Structured brief analysis
 
     Raises:
-        HTTPException: If neither file nor text is provided, or if processing fails
+        HTTPException: If neither file nor text is provided, text is too short, or if processing fails
     """
+    # Handle case where file is sent as empty string
+    if isinstance(file, str):
+        if not file.strip():
+            file = None
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid file format. Please upload a valid PDF or DOCX file."
+            )
+
+    # Check if file is actually provided (has a filename)
+    if file is not None and isinstance(file, UploadFile) and not file.filename:
+        file = None
+
+    # Normalize empty text strings to None
+    if text is not None and not text.strip():
+        text = None
+
     # Validate input
     if not file and not text:
         raise HTTPException(
@@ -61,6 +82,13 @@ async def analyze_brief(
         raise HTTPException(
             status_code=400,
             detail="Provide either 'file' or 'text', not both"
+        )
+
+    # Validate minimum text length if text is provided
+    if text and len(text.strip()) < MIN_TEXT_LENGTH:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Text input must be at least {MIN_TEXT_LENGTH} characters. Current length: {len(text.strip())} characters."
         )
 
     try:
