@@ -480,8 +480,13 @@ export function ImageEditorModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="!max-w-[98vw] !w-[98vw] !max-h-[98vh] !h-[98vh] !p-0 !bg-white !border-0 shadow-2xl rounded-2xl overflow-hidden !translate-x-[-50%] !translate-y-[-50%] !left-[50%] !top-[50%] !fixed !z-50">
         <DialogTitle className="sr-only">Image Editor</DialogTitle>
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-gray-100 shrink-0">
+        {/* Header - Fixed Height */}
+        <div className="h-14 flex items-center justify-center px-4 bg-white border-b border-gray-100 shrink-0">
+          <h2 className="text-lg font-semibold text-gray-900">Image Editor</h2>
+        </div>
+
+        {/* Toolbar - Fixed Height */}
+        <div className="h-12 flex items-center justify-between px-4 bg-gray-50 border-b border-gray-100 shrink-0">
           <div className="flex items-center gap-3">
             <button
               onClick={() => {
@@ -496,7 +501,7 @@ export function ImageEditorModal({
                 }
               }}
               disabled={historyIndex <= 0}
-              className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors bg-white"
               title="Undo"
             >
               <Undo2 className="w-4 h-4" />
@@ -514,7 +519,7 @@ export function ImageEditorModal({
                 }
               }}
               disabled={historyIndex >= history.length - 1}
-              className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors bg-white"
               title="Redo"
             >
               <Redo2 className="w-4 h-4" />
@@ -522,15 +527,17 @@ export function ImageEditorModal({
             <button
               onClick={resetToOriginal}
               disabled={!hasChanges}
-              className="text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+              className="text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors px-2 py-1 rounded"
             >
               Reset
             </button>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-gray-700 text-sm font-medium">Use your image</span>
+          <div className="flex items-center gap-3">
+            <span className="text-gray-600 text-sm">
+              {isProcessing ? 'Processing...' : `${hasChanges ? 'Modified' : 'Original'}`}
+            </span>
             <button
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"
               onClick={() => {
                 downloadEditedImage()
                 const canvas = canvasRef.current
@@ -549,8 +556,8 @@ export function ImageEditorModal({
 
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden min-h-0">
-          {/* Canvas Area */}
-          <div className="flex-1 flex items-center justify-center bg-gray-50 p-8 relative min-w-0">
+          {/* Canvas Area - Larger Canvas Container */}
+          <div className="flex-1 flex items-center justify-center bg-gray-50 p-4 relative min-w-0">
             {/* Loading state */}
             {!imageLoaded && !imageError && (
               <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-20">
@@ -577,22 +584,28 @@ export function ImageEditorModal({
               </div>
             )}
             
-            {/* Canvas wrapper for proper overlay positioning */}
-            <div className="relative inline-block">
+            {/* Much Larger Canvas Container */}
+            <div 
+              className="relative bg-white rounded-lg shadow-lg border border-gray-200 flex items-center justify-center"
+              style={{
+                width: 'calc(100vw - 480px)',
+                height: 'calc(100vh - 140px)',
+                minWidth: '500px',
+                minHeight: '400px'
+              }}
+            >
               <canvas
                 ref={canvasRef}
                 onMouseDown={startDrawing}
                 onMouseMove={onDrawing}
                 onMouseUp={stopDrawing}
                 onMouseLeave={stopDrawing}
-                className="shadow-lg rounded-lg border border-gray-200"
                 style={{
                   cursor: activeTool === 'crop' ? 'crosshair' : 'default',
-                  backgroundColor: '#ffffff',
+                  backgroundColor: 'white',
                   maxWidth: '100%',
                   maxHeight: '100%',
-                  width: 'auto',
-                  height: 'auto',
+                  objectFit: 'contain',
                   display: 'block'
                 }}
               />
@@ -604,8 +617,14 @@ export function ImageEditorModal({
                 const scaleX = rect.width / canvas.width
                 const scaleY = rect.height / canvas.height
                 
-                const displayX = Math.min(cropArea.x, cropArea.x + cropArea.width) * scaleX
-                const displayY = Math.min(cropArea.y, cropArea.y + cropArea.height) * scaleY
+                // Calculate canvas offset within the fixed container
+                const container = canvas.parentElement
+                const containerRect = container?.getBoundingClientRect()
+                const canvasOffsetX = container && containerRect ? (rect.left - containerRect.left) : 0
+                const canvasOffsetY = container && containerRect ? (rect.top - containerRect.top) : 0
+                
+                const displayX = canvasOffsetX + Math.min(cropArea.x, cropArea.x + cropArea.width) * scaleX
+                const displayY = canvasOffsetY + Math.min(cropArea.y, cropArea.y + cropArea.height) * scaleY
                 const displayWidth = Math.abs(cropArea.width) * scaleX
                 const displayHeight = Math.abs(cropArea.height) * scaleY
                 
