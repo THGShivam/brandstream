@@ -49,7 +49,7 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
       model: "Veo 3",
       icon: Video,
       description: "High-quality video generation (1 variation only)",
-      models: ["Veo 3"],
+      models: ["Veo 3", "Veo 2"],
       supportsVariations: false
     },
     Images: {
@@ -65,7 +65,7 @@ export function GenerateAssets({ onNext, onPrev }: GenerateAssetsProps) {
       model: "Gemini 2.5 pro",
       icon: FileText,
       description: "AI-powered copywriting with variations",
-      models: ["Gemini 2.5 pro"],
+      models: ["Gemini 2.5 pro", "Gemini 3 Pro Preview"],
       supportsVariations: true
     }
   })
