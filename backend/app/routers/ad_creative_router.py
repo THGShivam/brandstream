@@ -173,12 +173,12 @@ async def generate_assets(
     image_model: str = Form("Imagen 3", description="Image model: Imagen 3 or Imagen 4"),
     # Video generation parameters
     video_prompt: str = Form(None, description="Video generation prompt"),
-    video_model: str = Form("Veo 3", description="Video model: Veo 3"),
+    video_model: str = Form("Veo 3", description="Video model: Veo 3 or Veo 2"),
     video_duration: int = Form(5, ge=3, le=8, description="Video duration in seconds"),
     # Copy generation parameters
     copy_prompt: str = Form(None, description="Copy generation prompt"),
     copy_variations: int = Form(None, ge=1, le=5, description="Number of copy variations"),
-    copy_model: str = Form("Gemini 2.0 Flash", description="Copy model"),
+    copy_model: str = Form("Gemini 2.5 pro", description="Copy model: Gemini 2.5 pro or Gemini 3 Pro Preview"),
     # Common parameters
     creativity_level: str = Form(None, description="Creativity level: conservative, balanced, creative, experimental"),
     brief_context: str = Form(None, description="Brief context for copy generation"),
@@ -257,9 +257,12 @@ async def generate_assets(
         # Video generation config
         if video_prompt and creativity_level:
             video_model_mapping = {
-                "Veo 3": "veo-3.1-generate-preview"
+                "Veo 3": "veo-3.0-generate-001",
+                "Veo 2": "veo-2.0-generate-001"
             }
-            vid_model_name = video_model_mapping.get(video_model, "veo-3.1-generate-preview")
+            vid_model_name = video_model_mapping.get(video_model, "veo-3.0-generate-001")
+
+            print("using video generation model:", vid_model_name)
 
             vid_config = VideoGenerationConfig(
                 prompt=video_prompt,
@@ -272,9 +275,10 @@ async def generate_assets(
         if copy_prompt and copy_variations and creativity_level:
             copy_model_mapping = {
                 "Gemini 2.5 pro": "gemini-2.5-pro",
-                "Gemini 1.5 Pro": "gemini-1.5-pro-002"
+                "Gemini 3 Pro Preview": "gemini-3-pro-preview"
             }
             cp_model_name = copy_model_mapping.get(copy_model, "gemini-2.5-pro")
+            print("using copy generation model:", cp_model_name)
 
             cp_config = CopyGenerationConfig(
                 prompt=copy_prompt,

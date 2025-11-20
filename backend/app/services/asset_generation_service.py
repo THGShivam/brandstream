@@ -127,7 +127,7 @@ Make sure to incorporate the product from the reference image into the creative 
         config: VideoGenerationConfig,
         product_sku_image: bytes
     ) -> GeneratedVideo:
-        """Generate video using Veo 3 with Google GenAI SDK"""
+        """Generate video using Veo with Google GenAI SDK"""
 
         try:
             # Initialize Google GenAI client
@@ -141,7 +141,7 @@ Make sure to incorporate the product from the reference image into the creative 
             # Start video generation operation - pass image bytes with MIME type
             # Note: Not using output_gcs_uri so the API returns video_bytes directly
             operation = client.models.generate_videos(
-                model="veo-3.1-fast-generate-preview",
+                model=config.model_name,  # Use model from config (Veo 2 or Veo 3)
                 prompt=config.prompt,  # Use user's prompt directly
                 image=genai.types.Image(
                     image_bytes=product_sku_image,
@@ -285,11 +285,7 @@ Make sure to incorporate the product from the reference image into the creative 
     ) -> List[GeneratedCopy]:
         """Generate ad copy using Gemini"""
         try:
-            model = self._get_gemini_model(config.model_name)
             temperature = self._map_creativity_to_temperature(config.creativity_level)
-
-
-          
 
             # Enhanced prompt for copy generation
             generation_prompt = f"""{config.prompt}
@@ -313,16 +309,39 @@ Return the response as a JSON array with this structure:
 Brief Context:
 {brief_context}"""
 
-            response = model.generate_content(
-                generation_prompt,
-                generation_config={
-                    "temperature": temperature,
-                    "response_mime_type": "application/json"
-                }
-            )
+            # Use GenAI SDK for Gemini 3 Pro Preview (requires global region)
+            if config.model_name == "gemini-3-pro-preview":
+                client = genai.Client(
+                    vertexai=True,
+                    project=Config.PROJECT_ID,
+                    location="global"  # Gemini 3 requires global region
+                )
+
+                response = client.models.generate_content(
+                    model=config.model_name,
+                    contents=generation_prompt,
+                    config=genai.types.GenerateContentConfig(
+                        temperature=temperature,
+                        response_mime_type="application/json"
+                    )
+                )
+
+                response_text = response.text
+            else:
+                # Use Vertex AI GenerativeModel for other Gemini models
+                model = self._get_gemini_model(config.model_name)
+                response = model.generate_content(
+                    generation_prompt,
+                    generation_config={
+                        "temperature": temperature,
+                        "response_mime_type": "application/json"
+                    }
+                )
+                response_text = response.text
 
             # Parse JSON response
-            copy_data = json.loads(response.text)
+            copy_data = json.loads(response_text)
+        
 
             generated_copies = []
             for i, copy_item in enumerate(copy_data[:config.num_variations]):
@@ -338,7 +357,9 @@ Brief Context:
             return generated_copies
 
         except Exception as e:
+            print("Error generating copy:", e)
             raise ValueError(f"Error generating copy: {str(e)}")
+            
 
     async def generate_assets(
         self,

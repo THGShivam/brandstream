@@ -1,8 +1,9 @@
 "use client"
 
-import { Sparkles, Moon, Sun } from "lucide-react"
+import { Moon, Sun } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useTheme } from "@/components/theme-provider"
+import Image from "next/image"
 
 export function Header() {
   const { theme, toggleTheme } = useTheme()
@@ -12,8 +13,14 @@ export function Header() {
       <div className="container mx-auto px-4 py-4 max-w-7xl flex items-center justify-between">
         {/* Logo Section */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 dark:from-violet-500 dark:via-purple-500 dark:to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
-            <Sparkles className="w-6 h-6 text-foreground" />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center">
+            <Image
+              src="/THG-Studios-Icon.png"
+              alt="THG Studios Logo"
+              width={40}
+              height={40}
+              className="object-contain"
+            />
           </div>
           <div>
             <h1 className="font-bold text-lg text-foreground">Brandstream</h1>
@@ -43,7 +50,7 @@ export function Header() {
               <p className="font-medium text-foreground">Sarah Mitchell</p>
               <p className="text-xs text-muted-foreground">Creative Director</p>
             </div>
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full"></div>
+            <div className="w-8 h-8 bg-linear-to-br from-purple-400 to-pink-400 rounded-full"></div>
           </div>
         </div>
       </div>
