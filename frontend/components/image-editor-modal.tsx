@@ -66,28 +66,15 @@ export function ImageEditorModal({
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingError, setProcessingError] = useState<string | null>(null)
   
-  // Saved prompts
-  const [savedAdjustPrompts, setSavedAdjustPrompts] = useState<string[]>([])
-  const [savedFilterPrompts, setSavedFilterPrompts] = useState<string[]>([])
+  // Remove saved prompts functionality
   
   const originalImageRef = useRef<ImageData | null>(null)
   const imageRef = useRef<HTMLImageElement>(null)
 
-  // Load saved prompts and preferences from localStorage
+  // Load preferences from localStorage (without saved prompts)
   useEffect(() => {
-    const adjustPrompts = localStorage.getItem('savedAdjustPrompts')
-    const filterPrompts = localStorage.getItem('savedFilterPrompts')
     const lastTool = localStorage.getItem('imageEditor_lastTool')
     const lastAspect = localStorage.getItem('imageEditor_lastAspectRatio')
-    const draftAdjustPrompt = localStorage.getItem('imageEditor_draftAdjustPrompt')
-    const draftFilterPrompt = localStorage.getItem('imageEditor_draftFilterPrompt')
-    
-    if (adjustPrompts) setSavedAdjustPrompts(JSON.parse(adjustPrompts))
-    if (filterPrompts) setSavedFilterPrompts(JSON.parse(filterPrompts))
-    
-    // Restore draft prompts
-    if (draftAdjustPrompt) setCustomAdjustPrompt(draftAdjustPrompt)
-    if (draftFilterPrompt) setCustomFilterPrompt(draftFilterPrompt)
     
     // Set default tool from localStorage if available
     if (lastTool && ['crop', 'adjust', 'filters'].includes(lastTool)) {
@@ -340,17 +327,9 @@ export function ImageEditorModal({
       }
       img.src = `data:${result.mime_type};base64,${result.adjusted_image_base64}`
       
-      // Save prompt
-      if (!savedAdjustPrompts.includes(prompt)) {
-        const newPrompts = [...savedAdjustPrompts, prompt].slice(-5)
-        setSavedAdjustPrompts(newPrompts)
-        localStorage.setItem('savedAdjustPrompts', JSON.stringify(newPrompts))
-      }
-      
-      // Clear draft prompt on successful application
+      // Clear prompt on successful application
       if (customAdjustPrompt === prompt) {
         setCustomAdjustPrompt('')
-        localStorage.removeItem('imageEditor_draftAdjustPrompt')
       }
     } catch (error) {
       console.error('Adjustment application failed:', error)
@@ -384,17 +363,9 @@ export function ImageEditorModal({
       }
       img.src = `data:${result.mime_type};base64,${result.filtered_image_base64}`
       
-      // Save prompt
-      if (!savedFilterPrompts.includes(prompt)) {
-        const newPrompts = [...savedFilterPrompts, prompt].slice(-5)
-        setSavedFilterPrompts(newPrompts)
-        localStorage.setItem('savedFilterPrompts', JSON.stringify(newPrompts))
-      }
-      
-      // Clear draft prompt on successful application
+      // Clear prompt on successful application
       if (customFilterPrompt === prompt) {
         setCustomFilterPrompt('')
-        localStorage.removeItem('imageEditor_draftFilterPrompt')
       }
     } catch (error) {
       console.error('Filter application failed:', error)
@@ -765,60 +736,12 @@ export function ImageEditorModal({
                       onChange={(e) => {
                         setCustomAdjustPrompt(e.target.value)
                         setSelectedAdjustPreset(null)
-                        localStorage.setItem('imageEditor_draftAdjustPrompt', e.target.value)
                       }}
                       placeholder="Or describe an adjustment (e.g., 'change background to a forest')"
                       className="w-full bg-white border border-gray-300 text-gray-900 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm mb-3"
                       disabled={isProcessing}
                     />
 
-                    <div className="flex justify-end mb-4">
-                      <button
-                        onClick={() => {
-                          if (activeAdjustPrompt && !savedAdjustPrompts.includes(activeAdjustPrompt)) {
-                            const newPrompts = [...savedAdjustPrompts, activeAdjustPrompt].slice(-5)
-                            setSavedAdjustPrompts(newPrompts)
-                            localStorage.setItem('savedAdjustPrompts', JSON.stringify(newPrompts))
-                          }
-                        }}
-                        disabled={!activeAdjustPrompt?.trim()}
-                        className="text-xs font-medium px-3 py-1.5 rounded bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Save Prompt
-                      </button>
-                    </div>
-
-                    {savedAdjustPrompts.length > 0 && (
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Saved Prompts</label>
-                        <div className="flex flex-wrap gap-2">
-                          {savedAdjustPrompts.map((p, idx) => (
-                            <div key={idx} className="flex items-center gap-1">
-                              <button
-                                onClick={() => {
-                                  setSelectedAdjustPreset(null)
-                                  setCustomAdjustPrompt(p)
-                                }}
-                                className="px-3 py-1.5 text-xs bg-white hover:bg-gray-50 text-gray-700 rounded-full border border-gray-200"
-                                title={p}
-                              >
-                                {p.length > 30 ? p.slice(0, 27) + '...' : p}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  const newPrompts = savedAdjustPrompts.filter((_, i) => i !== idx)
-                                  setSavedAdjustPrompts(newPrompts)
-                                  localStorage.setItem('savedAdjustPrompts', JSON.stringify(newPrompts))
-                                }}
-                                className="text-gray-500 hover:text-gray-700 text-lg leading-none"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
 
                     {processingError && (
                       <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
@@ -877,60 +800,12 @@ export function ImageEditorModal({
                       onChange={(e) => {
                         setCustomFilterPrompt(e.target.value)
                         setSelectedFilterPreset(null)
-                        localStorage.setItem('imageEditor_draftFilterPrompt', e.target.value)
                       }}
                       placeholder="Or describe a custom filter (e.g., '80s synthwave glow')"
                       className="w-full bg-white border border-gray-300 text-gray-900 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm mb-3"
                       disabled={isProcessing}
                     />
 
-                    <div className="flex justify-end mb-4">
-                      <button
-                        onClick={() => {
-                          if (activeFilterPrompt && !savedFilterPrompts.includes(activeFilterPrompt)) {
-                            const newPrompts = [...savedFilterPrompts, activeFilterPrompt].slice(-5)
-                            setSavedFilterPrompts(newPrompts)
-                            localStorage.setItem('savedFilterPrompts', JSON.stringify(newPrompts))
-                          }
-                        }}
-                        disabled={!activeFilterPrompt?.trim()}
-                        className="text-xs font-medium px-3 py-1.5 rounded bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Save Prompt
-                      </button>
-                    </div>
-
-                    {savedFilterPrompts.length > 0 && (
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Saved Prompts</label>
-                        <div className="flex flex-wrap gap-2">
-                          {savedFilterPrompts.map((p, idx) => (
-                            <div key={idx} className="flex items-center gap-1">
-                              <button
-                                onClick={() => {
-                                  setSelectedFilterPreset(null)
-                                  setCustomFilterPrompt(p)
-                                }}
-                                className="px-3 py-1.5 text-xs bg-white hover:bg-gray-50 text-gray-700 rounded-full border border-gray-200"
-                                title={p}
-                              >
-                                {p.length > 30 ? p.slice(0, 27) + '...' : p}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  const newPrompts = savedFilterPrompts.filter((_, i) => i !== idx)
-                                  setSavedFilterPrompts(newPrompts)
-                                  localStorage.setItem('savedFilterPrompts', JSON.stringify(newPrompts))
-                                }}
-                                className="text-gray-500 hover:text-gray-700 text-lg leading-none"
-                              >
-                                ×
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
 
                     {processingError && (
                       <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
