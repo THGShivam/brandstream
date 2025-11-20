@@ -6,6 +6,7 @@ import asyncio
 import io
 from typing import Optional
 import google.generativeai as genai
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from PIL import Image as PILImage
 from app.config import Config
 
@@ -26,8 +27,19 @@ class ImageProcessingService:
         Apply AI-powered filter to an image - based on generateFilteredImage from reference
         """
         try:
-            # Create model instance
-            model = genai.GenerativeModel("gemini-2.5-flash-image-preview")
+            # Define relaxed safety settings
+            safety_settings = {
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            }
+            
+            # Create model instance with relaxed safety settings
+            model = genai.GenerativeModel(
+                "gemini-2.5-flash-image",
+                safety_settings=safety_settings
+            )
             
             # Convert base64 to PIL Image (following working pattern)
             image_data = base64.b64decode(image_base64)
@@ -71,8 +83,19 @@ Return only the stylistically filtered image."""
         Apply AI-powered adjustments to an image - based on generateAdjustedImage from reference
         """
         try:
-            # Create model instance
-            model = genai.GenerativeModel("gemini-2.5-flash-image-preview")
+            # Define relaxed safety settings
+            safety_settings = {
+                HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+                HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+            }
+            
+            # Create model instance with relaxed safety settings
+            model = genai.GenerativeModel(
+                "gemini-2.5-flash-image",
+                safety_settings=safety_settings
+            )
             
             # Convert base64 to PIL Image (following working pattern)
             image_data = base64.b64decode(image_base64)
